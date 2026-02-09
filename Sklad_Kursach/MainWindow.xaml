@@ -1,0 +1,11 @@
+﻿<Window x:Class="Sklad_Kursach.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ОМОН Склад v1.0" Height="700" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        MinHeight="800" MinWidth="800">
+
+    <Grid>
+        <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+    </Grid>
+</Window>

@@ -1,0 +1,304 @@
+﻿<Page x:Class="Sklad_Kursach.Pages.Inventory_Page"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      mc:Ignorable="d"
+      Title="Склад" d:DesignHeight="700" d:DesignWidth="1100"
+      Loaded="Page_Loaded">
+
+    <Grid Background="{StaticResource BrushBackground}">
+
+        <!-- ================= РЕСУРСЫ ДОЛЖНЫ БЫТЬ ПЕРВЫМИ ================= -->
+        <Grid.Resources>
+
+            <!-- “Красный срок хранения” -->
+            <Style x:Key="ShelfLifeTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="#FF0000"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+
+            <!-- Красивые строки -->
+            <Style x:Key="PrettyDataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+                <Setter Property="Height" Value="38"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#F3F6FA"/>
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#E3F2FD"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Красивые ячейки -->
+            <Style x:Key="PrettyDataGridCellStyle" TargetType="DataGridCell">
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="BorderBrush" Value="#EEEEEE"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+
+            <!-- Заголовки колонок -->
+            <Style x:Key="PrettyColumnHeaderStyle" TargetType="DataGridColumnHeader">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="FontFamily" Value="Segoe UI"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                <Setter Property="Height" Value="42"/>
+            </Style>
+
+        </Grid.Resources>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= ШАПКА ================= -->
+        <StackPanel Margin="40,40,40,20">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="⬅"
+                        ToolTip="Вернуться в меню"
+                        Width="50" Height="50"
+                        Margin="0,0,20,0"
+                        Style="{StaticResource BtnStyle}"
+                        Click="GoBack_Click"
+                        FontSize="24"
+                        Padding="0,0,0,4"/>
+
+                <TextBlock Text="📦" FontSize="32" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                <StackPanel>
+                    <TextBlock Text="ИНВЕНТАРИЗАЦИЯ"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource BrushPrimaryDark}"/>
+                    <TextBlock Text="Списки: новые / на складе / на отгрузку"
+                               FontSize="14"
+                               Foreground="{StaticResource BrushTextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel x:Name="AdminControlPanel"
+                        Orientation="Horizontal"
+                        Margin="70,30,0,0"
+                        Visibility="Collapsed">
+                <Button Content="+ Добавить товар"
+                        Style="{StaticResource BtnStyle}"
+                        Width="160" Height="45"
+                        Margin="0,0,15,0"
+                        Click="AddProduct_Click"/>
+
+                <Button Content="✎ Редактировать"
+                        Style="{StaticResource BtnStyle}"
+                        Width="160" Height="45"
+                        Background="#FFA000"
+                        Margin="0,0,15,0"
+                        Click="EditProduct_Click"/>
+
+                <Button Content="🗑 Удалить"
+                        Style="{StaticResource BtnStyle}"
+                        Width="120" Height="45"
+                        Background="#D32F2F"
+                        Click="DeleteProduct_Click"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- ================= 3 СПИСКА ================= -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="40,0,40,40">
+
+                <!-- ===== 1) НОВЫЙ ТОВАР ===== -->
+                <Border Background="White"
+                        CornerRadius="10"
+                        Padding="18"
+                        Margin="0,0,0,20"
+                        BorderBrush="#2E7D32"
+                        BorderThickness="2">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.12"/>
+                    </Border.Effect>
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="🟢 Новый товар"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="(ожидает размещения)"
+                                       Margin="10,5,0,0"
+                                       Foreground="{StaticResource BrushTextSecondary}"/>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  x:Name="NewItemsGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="NewItemsGrid_SelectionChanged"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  RowStyle="{StaticResource PrettyDataGridRowStyle}"
+                                  CellStyle="{StaticResource PrettyDataGridCellStyle}"
+                                  ColumnHeaderStyle="{StaticResource PrettyColumnHeaderStyle}">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Название" Binding="{Binding ProductName}" Width="2*"/>
+                                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="170"/>
+                                <DataGridTextColumn Header="Дата прибытия" Binding="{Binding DateReceipt, StringFormat=dd.MM.yyyy}" Width="150"/>
+                                <DataGridTextColumn Header="Кол-во" Binding="{Binding TotalCount}" Width="120"/>
+                                <DataGridTextColumn Header="Срок хранения" Binding="{Binding ShelfLife}" Width="140"
+                                                    ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,12,0,0">
+                            <Button x:Name="InfoBtn"
+                                    Content="ℹ Информация"
+                                    Style="{StaticResource BtnGhostStyle}"
+                                    Width="160"
+                                    Height="42"
+                                    Margin="0,0,12,0"
+                                    IsEnabled="False"
+                                    Click="InfoBtn_Click"/>
+
+                            <Button x:Name="SortBtn"
+                                    Content="📍 Сортировка"
+                                    Style="{StaticResource BtnStyle}"
+                                    Width="160"
+                                    Height="42"
+                                    IsEnabled="False"
+                                    Click="SortBtn_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ===== 2) НА СКЛАДЕ ===== -->
+                <Border Background="White"
+                        CornerRadius="10"
+                        Padding="18"
+                        Margin="0,0,0,20"
+                        BorderBrush="#D4B106"
+                        BorderThickness="2">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.12"/>
+                    </Border.Effect>
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="🟡 Товар на складе"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="(хранится до отгрузки)"
+                                       Margin="10,5,0,0"
+                                       Foreground="{StaticResource BrushTextSecondary}"/>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  x:Name="InStockGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  RowStyle="{StaticResource PrettyDataGridRowStyle}"
+                                  CellStyle="{StaticResource PrettyDataGridCellStyle}"
+                                  ColumnHeaderStyle="{StaticResource PrettyColumnHeaderStyle}">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Название" Binding="{Binding ProductName}" Width="2*"/>
+                                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="170"/>
+                                <DataGridTextColumn Header="Дата прибытия" Binding="{Binding DateReceipt, StringFormat=dd.MM.yyyy}" Width="150"/>
+                                <DataGridTextColumn Header="Ячейка" Binding="{Binding StorageCell}" Width="110"/>
+                                <DataGridTextColumn Header="Кол-во" Binding="{Binding TotalCount}" Width="120"/>
+                                <DataGridTextColumn Header="Срок хранения" Binding="{Binding ShelfLife}" Width="140"
+                                                    ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <!-- ===== 3) ДЛЯ ОТГРУЗКИ ===== -->
+                <Border Background="White"
+                        CornerRadius="10"
+                        Padding="18"
+                        BorderBrush="#B55A5A"
+                        BorderThickness="2">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.12"/>
+                    </Border.Effect>
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="🔴 Товар для отгрузки"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="(готов к выдаче)"
+                                       Margin="10,5,0,0"
+                                       Foreground="{StaticResource BrushTextSecondary}"/>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1"
+                                  x:Name="ForShipmentGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="None"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  RowStyle="{StaticResource PrettyDataGridRowStyle}"
+                                  CellStyle="{StaticResource PrettyDataGridCellStyle}"
+                                  ColumnHeaderStyle="{StaticResource PrettyColumnHeaderStyle}">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Название" Binding="{Binding ProductName}" Width="2*"/>
+                                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="170"/>
+                                <DataGridTextColumn Header="Дата прибытия" Binding="{Binding DateReceipt, StringFormat=dd.MM.yyyy}" Width="150"/>
+                                <DataGridTextColumn Header="Ячейка" Binding="{Binding StorageCell}" Width="110"/>
+                                <DataGridTextColumn Header="Кол-во" Binding="{Binding TotalCount}" Width="120"/>
+                                <DataGridTextColumn Header="Срок хранения" Binding="{Binding ShelfLife}" Width="140"
+                                                    ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

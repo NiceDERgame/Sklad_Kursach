@@ -1,0 +1,114 @@
+﻿<Page x:Class="Sklad_Kursach.Pages.UserHubPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      mc:Ignorable="d" 
+      Title="Меню Пользователя" d:DesignHeight="700" d:DesignWidth="1100">
+
+    <Grid Background="{StaticResource BrushBackground}">
+        <ScrollViewer Padding="40" Margin="0,41,0,-41">
+            <StackPanel MaxWidth="1000" HorizontalAlignment="Center">
+
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="РАБОЧЕЕ МЕСТО" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
+                        <TextBlock Text="Панель рабочего" FontSize="14" Foreground="#78909C"/>
+                    </StackPanel>
+
+                    <Button Click="GoProfile" Cursor="Hand" Background="Transparent" BorderThickness="0" Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Мой профиль" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                            <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushPrimary}">
+                                <TextBlock Text="👤" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <Separator Background="{StaticResource BrushBorder}" Margin="0,0,0,30"/>
+
+                <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,30">
+                    <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Новый товар" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock Text="240 шт" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Принято сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#388E3C"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Отсортировано сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#FBC02D"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Отгружено сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#1976D2"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Width="300" Background="White" CornerRadius="8" Padding="20" BorderBrush="#D32F2F" BorderThickness="1" Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Срочный товар" Foreground="#D32F2F" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#D32F2F"/>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+
+                <TextBlock Text="Меню действий" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                <WrapPanel HorizontalAlignment="Center">
+                    <Button Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoInventory">
+                        <StackPanel>
+                            <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Склад" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoIncoming">
+                        <StackPanel>
+                            <TextBlock Text="📥" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Приём" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoSorting">
+                        <StackPanel>
+                            <TextBlock Text="📑" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Сортировка" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoOutgoing">
+                        <StackPanel>
+                            <TextBlock Text="📤" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Отгрузка" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="UsersButton" Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoUsers">
+                        <StackPanel>
+                            <TextBlock Text="👥" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Пользователи" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Width="300" Style="{StaticResource BtnStyle}" Background="#455A64" Margin="10" Height="110" Click="Logout">
+                        <StackPanel>
+                            <TextBlock Text="🚪" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Выход" FontSize="16" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
