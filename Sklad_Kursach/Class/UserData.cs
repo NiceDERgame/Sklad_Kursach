@@ -21,7 +21,7 @@ namespace Sklad_Kursach.Class
         public string Password { get; set; }
 
 
-        private string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V2"].ConnectionString; // строка подключения из апишки
+        private string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString; // строка подключения из апишки
 
         public UserData GetUser(string login, string password)
         {

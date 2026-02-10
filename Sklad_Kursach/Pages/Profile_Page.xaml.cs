@@ -34,7 +34,7 @@ namespace Sklad_Kursach.Pages
             UserName.Text = UserData.CurrentUser.FirstName + " " + UserData.CurrentUser.LastName;
             PostTb.Text = UserData.CurrentUser.Role;
 
-            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V2"].ConnectionString;
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
 
                 using (SqlConnection conn = new SqlConnection(connStr)) // последний вход записываем
                 {
