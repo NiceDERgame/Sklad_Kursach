@@ -3,9 +3,9 @@ CREATE DATABASE Warehouse_DB_V3;
 USE Warehouse_DB_V3;
 
 
-/* =============================================
+/* 
    1) Справочники
-========================================= */
+ */
 
 -- Должности/роли (админ/рабочий и т.д.)
 CREATE TABLE dbo.Post (
@@ -72,9 +72,9 @@ CREATE TABLE dbo.Product (
 );
 
 
-/* =========================================
+/* 
    2) Склад: зоны/ячейки
-========================================= */
+ */
 
 -- Склад (может быть один)
 CREATE TABLE dbo.Warehouse (
@@ -117,7 +117,7 @@ CREATE TABLE dbo.Receipt (
     provider_id INT NOT NULL,
     employee_id INT NOT NULL,
     ReceiptDate DATE NOT NULL DEFAULT(GETDATE()),
-    CreatedAt DATETIME NOT NULL DEFAULT(GETDATE()),
+    CreatedAt DATETIME NOT NULL DEFAULT(GETDATE()), 
     TotalSum DECIMAL(10,2) NULL,
     FOREIGN KEY (provider_id) REFERENCES dbo.The_supplier(provider_id),
     FOREIGN KEY (employee_id) REFERENCES dbo.Employee(Employee_id)
@@ -165,9 +165,9 @@ CREATE TABLE dbo.LotPlacement (
 );
 
 
-/* =========================================
+/* 
    4) Отгрузка
-========================================= */
+ */
 
 -- Документ отгрузки
 CREATE TABLE dbo.Shipment (
@@ -205,9 +205,9 @@ CREATE TABLE dbo.ShipmentPick (
 );
 
 
-/* =========================================
-   5) Логи действий (как твоя страница Logs)
-========================================= */
+/* 
+   5) Логи действий
+ */
 
 CREATE TABLE dbo.ActionLog (
     Log_id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -223,49 +223,4 @@ CREATE TABLE dbo.ActionLog (
     FOREIGN KEY (Lot_id) REFERENCES dbo.Lot(Lot_id),
     FOREIGN KEY (Cell_id) REFERENCES dbo.StorageCell(Cell_id)
 );
-
-
-/* =========================================
-   6) Тестовые данные (чтобы сразу работало)
-========================================= */
-
-INSERT INTO dbo.Post(Post_Name) VALUES (N'Администратор'), (N'Рабочий');
-
-INSERT INTO dbo.FIO(Last_name, First_name, Middle_name)
-VALUES (N'Иванов', N'Иван', N'Иванович');
-
-INSERT INTO dbo.Data_for_authorization([Login],[Password],LastVhod)
-VALUES (N'admin', N'admin', GETDATE());
-
-INSERT INTO dbo.The_supplier([name],[address],telephone)
-VALUES (N'Компания Снабжение', N'г. Москва', N'+7-900-111-22-33'),
-       (N'ИП Поставщик-2', N'г. СПб', N'+7-900-444-55-66');
-
-INSERT INTO dbo.OKEI(Code, Name) VALUES (N'796', N'Штука'), (N'166', N'Килограмм');
-
-INSERT INTO dbo.Type_Tovar(Type_Tovar_Name)
-VALUES (N'Еда'), (N'Техника'), (N'Химия'), (N'Другое');
-
-INSERT INTO dbo.Product([Name], Type_Tovar_id, measurement_id)
-VALUES (N'Рис 5кг', 1, 2),
-       (N'Сахар 1кг', 1, 2),
-       (N'Паста', 1, 1),
-       (N'Кабель HDMI', 2, 1);
-
-INSERT INTO dbo.Warehouse(Name, Address)
-VALUES (N'Основной склад', N'Адрес склада');
-
-INSERT INTO dbo.Zona(Warehouse_id, Name_Zona)
-VALUES (1, N'Еда'), (1, N'Техника'), (1, N'Химия'), (1, N'Другое');
-
--- по 6 ячеек на зону: A1..F1 для Еда, A3..F3 условно — но лучше единый код в зоне
--- сделаем A1..F2 для каждой зоны (одинаково в каждой зоне)
-DECLARE @z INT = 1;
-WHILE @z <= 4
-BEGIN
-    INSERT INTO dbo.StorageCell(Zona_id, CellCode) VALUES
-    (@z, N'A1'),(@z, N'B1'),(@z, N'C1'),(@z, N'D1'),(@z, N'E1'),(@z, N'F1'),
-    (@z, N'A2'),(@z, N'B2'),(@z, N'C2'),(@z, N'D2'),(@z, N'E2'),(@z, N'F2');
-    SET @z = @z + 1;
-END
 

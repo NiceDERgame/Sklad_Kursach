@@ -23,7 +23,6 @@ namespace Sklad_Kursach.Pages
     /// </summary>
     public partial class Profile_Page : Page
     {
-        UserData userdata = new UserData();
         public Profile_Page()
         {
             InitializeComponent();
@@ -33,6 +32,7 @@ namespace Sklad_Kursach.Pages
 
             UserName.Text = UserData.CurrentUser.FirstName + " " + UserData.CurrentUser.LastName;
             PostTb.Text = UserData.CurrentUser.Role;
+            LoginTb.Text = UserData.CurrentUser.LastLogin;
 
             string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
 
@@ -42,7 +42,7 @@ namespace Sklad_Kursach.Pages
 
                     SqlCommand cmd2 = new SqlCommand(query2, conn);
 
-                    cmd2.Parameters.AddWithValue("@id", userdata.AuthId);
+                    cmd2.Parameters.AddWithValue("@id", UserData.CurrentUser.AuthId);
 
                     cmd2.Parameters.AddWithValue("@LastVhod", nowTime);
 
