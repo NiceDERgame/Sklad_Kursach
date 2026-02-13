@@ -235,27 +235,36 @@
                     <TextBlock Text="Дата прибытия" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
                     <DatePicker x:Name="ReceiptDateDp" Style="{StaticResource DatePretty}"/>
 
-                    <Grid Margin="0,14,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="14"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+					<Grid Margin="0,14,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="10"/>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="10"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Общее кол-во" Style="{StaticResource SectionTitleStyle}"/>
-                            <TextBox x:Name="TotalCountTb"
+						<StackPanel Grid.Column="0">
+							<TextBlock Text="Общее кол-во" Style="{StaticResource SectionTitleStyle}"/>
+							<TextBox x:Name="TotalCountTb"
                                      Style="{StaticResource TextPretty}"
                                      PreviewTextInput="NumberValidation"/>
-                        </StackPanel>
+						</StackPanel>
 
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Срок хранения (часов)" Style="{StaticResource SectionTitleStyle}"/>
-                            <TextBox x:Name="ShelfLifeTb"
+						<StackPanel Grid.Column="2">
+							<TextBlock Text="Цена за 1 шт" Style="{StaticResource SectionTitleStyle}"/>
+							<TextBox x:Name="PriceTb"
                                      Style="{StaticResource TextPretty}"
                                      PreviewTextInput="NumberValidation"/>
-                        </StackPanel>
-                    </Grid>
+						</StackPanel>
+
+						<StackPanel Grid.Column="4">
+							<TextBlock Text="Срок хранения (часов)" Style="{StaticResource SectionTitleStyle}"/>
+							<TextBox x:Name="ShelfLifeTb"
+                                     Style="{StaticResource TextPretty}"
+                                     PreviewTextInput="NumberValidation"/>
+						</StackPanel>
+					</Grid>
 
                     <TextBlock Text="Поставщик" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
                     <ComboBox x:Name="SupplierCb" Style="{StaticResource ComboPretty}"/>

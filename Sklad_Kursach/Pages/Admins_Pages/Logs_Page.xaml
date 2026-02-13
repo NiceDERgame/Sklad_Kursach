@@ -21,32 +21,63 @@
                 <TextBlock Text="📜" FontSize="32" Margin="0,0,15,0" VerticalAlignment="Center"/>
                 <StackPanel>
                     <TextBlock Text="ЖУРНАЛ ДЕЙСТВИЙ" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
-                    <TextBlock Text="История операций сотрудников" FontSize="14" Foreground="#78909C"/>
+                    <TextBlock Text="История всех операций на складе" FontSize="14" Foreground="#78909C"/>
                 </StackPanel>
             </StackPanel>
         </StackPanel>
 
         <Border Grid.Row="1" Background="White" CornerRadius="8" Margin="40,0,40,40">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.1"/>
+            </Border.Effect>
+
             <DataGrid x:Name="LogsGrid" AutoGenerateColumns="False" IsReadOnly="True" 
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                       Background="Transparent" BorderThickness="0"
-                      RowHeight="40" ColumnHeaderHeight="45">
+                      RowHeight="50" ColumnHeaderHeight="45"
+                      VerticalScrollBarVisibility="Auto">
+
                 <DataGrid.Resources>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="White"/>
                         <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="14"/>
                         <Setter Property="Padding" Value="10,0"/>
                         <Setter Property="BorderBrush" Value="#E0E0E0"/>
                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="10,0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <Border Padding="{TemplateBinding Padding}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                        <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                     </Style>
                 </DataGrid.Resources>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Время" Binding="{Binding ActionTime, StringFormat=dd.MM.yyyy HH:mm}" Width="160"/>
-                    <DataGridTextColumn Header="Сотрудник" Binding="{Binding EmployeeFIO}" Width="200"/>
-                    <DataGridTextColumn Header="Действие" Binding="{Binding ActionType}" Width="150" FontWeight="SemiBold"/>
-                    <DataGridTextColumn Header="Товар" Binding="{Binding ProductName}" Width="*"/>
-                    <DataGridTextColumn Header="Ячейка" Binding="{Binding StorageCell}" Width="100"/>
+                    <DataGridTextColumn Header="Время" Binding="{Binding ActionTime, StringFormat=dd.MM.yyyy HH:mm}" Width="150" Foreground="#546E7A"/>
+
+                    <DataGridTextColumn Header="Тип" Binding="{Binding ActionType}" Width="130" FontWeight="Bold"/>
+
+                    <DataGridTextColumn Header="Сотрудник" Binding="{Binding EmployeeName}" Width="200"/>
+
+                    <DataGridTextColumn Header="Описание события" Binding="{Binding Details}" Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                <Setter Property="Padding" Value="5,5"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

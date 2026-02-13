@@ -32,7 +32,7 @@ namespace Sklad_Kursach.Pages
 
             UserName.Text = UserData.CurrentUser.FirstName + " " + UserData.CurrentUser.LastName;
             PostTb.Text = UserData.CurrentUser.Role;
-            LoginTb.Text = UserData.CurrentUser.LastLogin;
+            LoginTb.Text = UserData.CurrentUser.Login;
 
             string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
 
