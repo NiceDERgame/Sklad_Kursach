@@ -1,71 +1,82 @@
-﻿using System.Windows;
+﻿using Sklad_Kursach.Class;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
-using Sklad_Kursach.Class; // Для UserSession
-using Sklad_Kursach.Pages; // Чтобы видеть Inventory_Page, Profile_Page и др.
-
-// Если у тебя Users_Page лежит в Admins_Pages, но ты скопировал мой код с namespace Sklad_Kursach.Pages, то всё ок.
-// Если нет, раскомментируй строку ниже:
-// using Sklad_Kursach.Pages.Admins_Pages;
 
 namespace Sklad_Kursach.Pages
 {
     public partial class UserHubPage : Page
     {
-        UserData userdata = new UserData();
         public UserHubPage()
         {
             InitializeComponent();
+        }
 
-            // Скрываем кнопку "Пользователи", если это не Админ
-            // Проверка на null нужна, чтобы не упало, если кнопки нет в XAML
-            if (userdata.Role != "Администратор")
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            WelcomeTb.Text = $"С возвращением, {UserData.CurrentUser.FirstName}";
+            LoadUserStats();
+
+            // Загрузка аватарки с подменой
+            UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
+        }
+
+        private void LoadUserStats()
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connStr))
             {
-                if (this.FindName("UsersButton") is Button btn)
-                {
-                    btn.Visibility = Visibility.Collapsed;
-                }
+                conn.Open();
+
+                string sqlNew = "SELECT COUNT(*) FROM Lot WHERE Lot_id NOT IN (SELECT Lot_id FROM LotPlacement)";
+                SqlCommand cmdNew = new SqlCommand(sqlNew, conn);
+                TotalNewItemsTb.Text = cmdNew.ExecuteScalar().ToString();
+
+                string sqlIncoming = @"
+                    SELECT COUNT(*) FROM ActionLog 
+                    WHERE ActionType = 'INCOMING' 
+                    AND Employee_id = @empId 
+                    AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
+                SqlCommand cmdInc = new SqlCommand(sqlIncoming, conn);
+                cmdInc.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
+                MyIncomingStats.Text = cmdInc.ExecuteScalar().ToString();
+
+                string sqlSort = @"
+                    SELECT COUNT(*) FROM ActionLog 
+                    WHERE ActionType = 'SORT' 
+                    AND Employee_id = @empId 
+                    AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
+                SqlCommand cmdSort = new SqlCommand(sqlSort, conn);
+                cmdSort.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
+                MySortStats.Text = cmdSort.ExecuteScalar().ToString();
+
+                string sqlShip = @"
+                    SELECT COUNT(*) FROM ActionLog 
+                    WHERE ActionType = 'PICKING' 
+                    AND Employee_id = @empId 
+                    AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
+                SqlCommand cmdShip = new SqlCommand(sqlShip, conn);
+                cmdShip.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
+                MyShipmentStats.Text = cmdShip.ExecuteScalar().ToString();
+
+                string sqlUrgent = @"
+                    SELECT COUNT(*) 
+                    FROM Lot l
+                    LEFT JOIN LotPlacement lp ON l.Lot_id = lp.Lot_id
+                    WHERE DATEADD(hour, l.ShelfLifeHours, CAST(l.ArrivalDate AS DATETIME)) < DATEADD(day, 3, GETDATE())";
+                SqlCommand cmdUrgent = new SqlCommand(sqlUrgent, conn);
+                UrgentItemsTb.Text = cmdUrgent.ExecuteScalar().ToString();
             }
         }
 
-        // --- НАВИГАЦИЯ ---
-
-        private void GoProfile(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Profile_Page());
-        }
-
-        private void GoInventory(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Inventory_Page());
-        }
-
-        private void GoIncoming(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Incoming_Page());
-        }
-
-        private void GoSorting(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Sort_Page());
-        }
-
-        private void GoOutgoing(object sender, RoutedEventArgs e)
-        {
-            // Создай Outgoing_Page.xaml, если его нет!
-            //NavigationService.Navigate(new Outgoing_Page());
-        }
-
-        private void GoUsers(object sender, RoutedEventArgs e)
-        {
-            // Эта кнопка видна только админу (через логику в конструкторе)
-            NavigationService.Navigate(new Users_Page());
-        }
-
-        private void Logout(object sender, RoutedEventArgs e)
-        {
-            UserData.CurrentUser = null; // очистка юзера (сносит польностью все данные при выходе)
-            NavigationService.Navigate(new Auth_Page());
-        }
+        private void GoProfile(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Profile_Page());
+        private void GoInventory(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Inventory_Page());
+        private void GoIncoming(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Incoming_Page());
+        private void GoSorting(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Sort_Page(0, ""));
+        private void GoOutgoing(object sender, RoutedEventArgs e) { }
+        private void GoUsers(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Users_Page());
+        private void Logout(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
     }
 }

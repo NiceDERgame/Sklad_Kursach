@@ -19,7 +19,7 @@ INSERT INTO dbo.FIO (Last_name, First_name, Middle_name) VALUES
 
 -- 1.3 Данные для авторизации (Логин / Пароль)
 INSERT INTO dbo.Data_for_authorization ([Login], [Password], LastVhod) VALUES 
-('admin', 'admin123', GETDATE()), 
+('1', '1', GETDATE()), 
 ('senior', 'senior123', GETDATE()), 
 ('worker', 'worker123', GETDATE());
 

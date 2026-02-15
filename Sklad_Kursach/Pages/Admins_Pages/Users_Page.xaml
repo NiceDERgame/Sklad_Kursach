@@ -8,6 +8,49 @@
       Loaded="Page_Loaded">
 
     <Grid Background="{StaticResource BrushBackground}">
+        <Grid.Resources>
+            <Style TargetType="DataGridColumnHeader">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="#78909C"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Height" Value="45"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="BorderBrush" Value="#EEEEEE"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            </Style>
+
+            <Style TargetType="DataGridRow">
+                <Setter Property="Height" Value="45"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#F5F7FA"/>
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#E3F2FD"/>
+                        <Setter Property="Foreground" Value="{StaticResource BrushPrimaryDark}"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="DataGridCell">
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridCell">
+                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ContentPresenter VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -15,47 +58,96 @@
 
         <StackPanel Margin="40,40,40,20">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="⬅" ToolTip="Вернуться в меню" Width="50" Height="50" Margin="0,0,20,0" 
+                <Button Content="⬅" ToolTip="Вернуться" Width="50" Height="50" Margin="0,0,20,0" 
                         Style="{StaticResource BtnStyle}" Click="GoBack_Click" FontSize="24" Padding="0,0,0,4"/>
 
                 <TextBlock Text="👥" FontSize="32" Margin="0,0,15,0" VerticalAlignment="Center"/>
                 <StackPanel>
                     <TextBlock Text="СОТРУДНИКИ" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
-                    <TextBlock Text="Управление доступом и персоналом" FontSize="14" Foreground="#78909C"/>
+                    <TextBlock Text="Статистика эффективности за сегодня" FontSize="14" Foreground="#78909C"/>
                 </StackPanel>
             </StackPanel>
 
             <StackPanel x:Name="AdminUserPanel" Orientation="Horizontal" Margin="70,30,0,0" Visibility="Collapsed">
                 <Button Content="+ Новый сотрудник" Style="{StaticResource BtnStyle}" Width="180" Height="45" Margin="0,0,15,0" Click="AddUser_Click"/>
-                <Button Content="✎ Изменить данные" Style="{StaticResource BtnStyle}" Width="180" Height="45" Background="#FFA000" Margin="0,0,15,0" Click="EditUser_Click"/>
-                <Button Content="⛔ Уволить/Удалить" Style="{StaticResource BtnStyle}" Width="160" Height="45" Background="#D32F2F" Click="DeleteUser_Click"/>
+                <Button Content="⛔ Уволить" Style="{StaticResource BtnStyle}" Width="150" Height="45" Background="#D32F2F" Click="DeleteUser_Click"/>
             </StackPanel>
         </StackPanel>
 
-        <Border Grid.Row="1" Background="White" CornerRadius="8" Margin="40,0,40,40">
+        <Border Grid.Row="1" Background="White" CornerRadius="12" Margin="40,0,40,40" BorderBrush="#EEEEEE" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" Opacity="0.08" ShadowDepth="4" Color="Black"/>
+            </Border.Effect>
+
             <DataGrid x:Name="UsersGrid" AutoGenerateColumns="False" IsReadOnly="True" 
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#F5F5F5" VerticalGridLinesBrush="Transparent"
                       Background="Transparent" BorderThickness="0"
-                      RowHeight="40" ColumnHeaderHeight="45">
-                <DataGrid.Resources>
-                    <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="White"/>
-                        <Setter Property="FontWeight" Value="Bold"/>
-                        <Setter Property="Padding" Value="10,0"/>
-                        <Setter Property="BorderBrush" Value="#E0E0E0"/>
-                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                    </Style>
-                </DataGrid.Resources>
+                      AlternatingRowBackground="#FAFAFA"
+                      ColumnHeaderHeight="45">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Фамилия" Binding="{Binding LastName}" Width="*"/>
-                    <DataGridTextColumn Header="Имя" Binding="{Binding FirstName}" Width="*"/>
-                    <DataGridTextColumn Header="Отчество" Binding="{Binding MiddleName}" Width="*"/>
-                    <DataGridTextColumn Header="Должность" Binding="{Binding PostName}" Width="150" FontWeight="Bold"/>
-                    <DataGridTextColumn Header="Логин" Binding="{Binding Login}" Width="150"/>
-                    <DataGridTextColumn Header="Телефон" Binding="{Binding Phone}" Width="150"/>
+                    <DataGridTextColumn Header="ФИО сотрудника" Binding="{Binding FullName}" Width="2*"/>
+                    <DataGridTextColumn Header="Должность" Binding="{Binding Role}" Width="150" FontWeight="Bold"/>
+                    <DataGridTextColumn Header="Логин" Binding="{Binding Login}" Width="120"/>
+
+                    <DataGridTextColumn x:Name="PasswordColumn" Header="Пароль" Binding="{Binding Password}" Width="120" Visibility="Collapsed" Foreground="#B0BEC5"/>
+
+                    <DataGridTextColumn Header="Последний вход" Binding="{Binding LastLogin}" Width="160" Foreground="#90A4AE"/>
+
+                    <DataGridTextColumn Header="Принял" Binding="{Binding IncomingToday}" Width="100" FontWeight="SemiBold" Foreground="#388E3C"/>
+                    <DataGridTextColumn Header="Сортировка" Binding="{Binding SortToday}" Width="120" FontWeight="SemiBold" Foreground="#FBC02D"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
+
+        <Grid x:Name="AddUserOverlay" Grid.RowSpan="2" Visibility="Collapsed">
+            <Border Background="Black" Opacity="0.5" MouseDown="CancelAdd_Click"/>
+            <Border Background="White" Width="450" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="12" Padding="30">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="30" Opacity="0.3"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Новый сотрудник" FontSize="22" FontWeight="Bold" Margin="0,0,0,20" Foreground="{StaticResource BrushPrimary}"/>
+
+                    <TextBlock Text="Фамилия" Foreground="#78909C"/>
+                    <TextBox x:Name="NewSurnameTb" Style="{StaticResource InputStyle}" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Имя" Foreground="#78909C"/>
+                    <TextBox x:Name="NewNameTb" Style="{StaticResource InputStyle}" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Отчество (не обязательно)" Foreground="#78909C"/>
+                    <TextBox x:Name="NewPatronymicTb" Style="{StaticResource InputStyle}" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Должность" Foreground="#78909C"/>
+                    <ComboBox x:Name="NewRoleCb" Height="40" Margin="0,0,0,10" FontSize="14" VerticalContentAlignment="Center">
+                        <ComboBoxItem Content="Администратор"/>
+                        <ComboBoxItem Content="Старший рабочий"/>
+                        <ComboBoxItem Content="Рабочий" IsSelected="True"/>
+                    </ComboBox>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Логин" Foreground="#78909C"/>
+                            <TextBox x:Name="NewLoginTb" Style="{StaticResource InputStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Пароль" Foreground="#78909C"/>
+                            <TextBox x:Name="NewPassTb" Style="{StaticResource InputStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,25,0,0">
+                        <Button Content="Отмена" Background="Transparent" Foreground="Gray" Click="CancelAdd_Click" Margin="0,0,10,0"/>
+                        <Button Content="Сохранить" Style="{StaticResource BtnStyle}" Click="SaveUser_Click" Width="120"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Page>

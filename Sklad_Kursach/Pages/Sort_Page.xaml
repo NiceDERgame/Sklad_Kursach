@@ -1,7 +1,7 @@
 ﻿<Page x:Class="Sklad_Kursach.Pages.Sort_Page"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Title="Сортировка">
+      Title="Сортировка" Loaded="Page_Loaded">
 
     <Grid Background="{StaticResource BrushBackground}">
         <Grid.RowDefinitions>
@@ -9,193 +9,22 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ================= ШАПКА ================= -->
         <StackPanel Margin="40,40,40,20">
-
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-
-                <!-- КНОПКА НАЗАД — как у тебя -->
-                <Button Content="⬅"
-                        Width="50" Height="50"
-                        Margin="0,0,20,0"
-                        Style="{StaticResource BtnStyle}"
-                        FontSize="24"
-                        Padding="0,0,0,4"
-                        Click="Back_Click"/>
+                <Button Content="⬅" Width="50" Height="50" Margin="0,0,20,0" 
+                        Style="{StaticResource BtnStyle}" Click="Back_Click" FontSize="24" Padding="0,0,0,4"/>
 
                 <TextBlock Text="🗂" FontSize="32" Margin="0,0,15,0"/>
-
                 <StackPanel>
-                    <TextBlock Text="СОРТИРОВКА ПО ЯЧЕЙКАМ"
-                               FontSize="28"
-                               FontWeight="Bold"
-                               Foreground="{StaticResource BrushPrimaryDark}"/>
-
-                    <TextBlock Text="Выберите сектор и ячейку хранения"
-                               FontSize="14"
-                               Foreground="{StaticResource BrushTextSecondary}"/>
+                    <TextBlock Text="СОРТИРОВКА" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
+                    <TextBlock x:Name="ProductTitle" Text="Выберите ячейку для товара" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
                 </StackPanel>
-
             </StackPanel>
-
         </StackPanel>
 
-        <!-- ================= ОСНОВНОЙ КОНТЕНТ ================= -->
         <ScrollViewer Grid.Row="1">
-            <Grid Margin="40,0,40,40">
-
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-
-                <!-- ========= КАРТОЧКА СЕКТОРА ========= -->
-                <!-- ЕДА -->
-                <Border Grid.Row="0" Grid.Column="0"
-                        Background="White"
-                        CornerRadius="10"
-                        Padding="20"
-                        Margin="0,0,20,20">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.15"/>
-                    </Border.Effect>
-
-                    <StackPanel>
-
-                        <TextBlock Text="🍎 Сектор: Еда"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource BrushPrimary}"/>
-
-                        <TextBlock Text="Продукты и расходники"
-                                   Margin="0,4,0,12"
-                                   Foreground="{StaticResource BrushTextSecondary}"/>
-
-                        <UniformGrid Columns="6">
-                            <Button Content="A1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F1" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-
-                            <Button Content="A2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F2" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                        </UniformGrid>
-
-                    </StackPanel>
-                </Border>
-
-
-                <!-- ТЕХНИКА -->
-                <Border Grid.Row="0" Grid.Column="1"
-                        Background="White"
-                        CornerRadius="10"
-                        Padding="20"
-                        Margin="0,0,0,20">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.15"/>
-                    </Border.Effect>
-
-                    <StackPanel>
-
-                        <TextBlock Text="💻 Сектор: Техника"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource BrushPrimary}"/>
-
-                        <TextBlock Text="Оборудование и приборы"
-                                   Margin="0,4,0,12"
-                                   Foreground="{StaticResource BrushTextSecondary}"/>
-
-                        <UniformGrid Columns="6">
-                            <Button Content="A3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F3" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-
-                            <Button Content="A4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F4" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                        </UniformGrid>
-
-                    </StackPanel>
-                </Border>
-
-
-                <!-- ХИМИЯ -->
-                <Border Grid.Row="1" Grid.Column="0"
-                        Background="White"
-                        CornerRadius="10"
-                        Padding="20"
-                        Margin="0,0,20,0">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.15"/>
-                    </Border.Effect>
-
-                    <StackPanel>
-
-                        <TextBlock Text="🧪 Сектор: Химия"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource BrushPrimary}"/>
-
-                        <UniformGrid Columns="6">
-                            <Button Content="A5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F5" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                        </UniformGrid>
-
-                    </StackPanel>
-                </Border>
-
-
-                <!-- ДРУГОЕ -->
-                <Border Grid.Row="1" Grid.Column="1"
-                        Background="White"
-                        CornerRadius="10"
-                        Padding="20">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.15"/>
-                    </Border.Effect>
-
-                    <StackPanel>
-
-                        <TextBlock Text="📦 Сектор: Другое"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource BrushPrimary}"/>
-
-                        <UniformGrid Columns="6">
-                            <Button Content="A6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="B6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="C6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="D6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="E6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                            <Button Content="F6" Style="{StaticResource BtnGhostStyle}" Margin="5" Click="Cell_Click"/>
-                        </UniformGrid>
-
-                    </StackPanel>
-                </Border>
-
-            </Grid>
+            <StackPanel x:Name="ZonesContainer" Margin="40,0,40,40">
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </Page>

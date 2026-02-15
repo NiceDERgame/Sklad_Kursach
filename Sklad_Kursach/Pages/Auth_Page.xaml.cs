@@ -38,25 +38,29 @@ namespace Sklad_Kursach.Pages
 
             if (UserData.CurrentUser != null)
             {
+                // Получаем роль и сразу делаем её маленькими буквами для надежности
+                string role = UserData.CurrentUser.Role.ToLower();
 
-                if (UserData.CurrentUser.Role == "Рабочий")
+                // Проверяем (все названия пишем маленькими буквами)
+                if (role == "рабочий")
                 {
                     NavigationService.Navigate(new UserHubPage());
                 }
-                else if (UserData.CurrentUser.Role == "Старший Рабочий" || UserData.CurrentUser.Role == "Администратор")
+                // "старший рабочий" или "администратор"
+                else if (role == "старший рабочий" || role == "администратор")
                 {
                     NavigationService.Navigate(new AdminHubPage());
-
                 }
-            }
-            else if (UserData.CurrentUser == null)
-            {
-                MessageBox.Show("Пользователь не найден :<", "Неудача", MessageBoxButton.OK, MessageBoxImage.Information);
-
+                else
+                {
+                    MessageBox.Show($"Роль '{UserData.CurrentUser.Role}' не распознана системой!",
+                        "Ошибка доступа", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             else
             {
-                MessageBox.Show("Неверный логин или пароль. Пожалуйста, попробуйте снова.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Неверный логин или пароль. Пожалуйста, попробуйте снова.",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

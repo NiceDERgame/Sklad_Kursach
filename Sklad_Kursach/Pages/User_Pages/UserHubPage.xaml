@@ -4,7 +4,8 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       mc:Ignorable="d" 
-      Title="Меню Пользователя" d:DesignHeight="700" d:DesignWidth="1100">
+      Title="Меню Пользователя" d:DesignHeight="700" d:DesignWidth="1100"
+      Loaded="Page_Loaded">
 
     <Grid Background="{StaticResource BrushBackground}">
         <ScrollViewer Padding="40" Margin="0,41,0,-41">
@@ -18,14 +19,15 @@
 
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="РАБОЧЕЕ МЕСТО" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
-                        <TextBlock Text="Панель рабочего" FontSize="14" Foreground="#78909C"/>
+                        <TextBlock x:Name="WelcomeTb" Text="Панель рабочего" FontSize="14" Foreground="#78909C"/>
                     </StackPanel>
 
                     <Button Click="GoProfile" Cursor="Hand" Background="Transparent" BorderThickness="0" Grid.Column="1">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Мой профиль" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                            <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushPrimary}">
-                                <TextBlock Text="👤" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
+
+                            <Border x:Name="AvatarBorder" Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushPrimary}">
+                                <TextBlock x:Name="AvatarEmoji" Text="👤" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
                             </Border>
                         </StackPanel>
                     </Button>
@@ -36,32 +38,36 @@
                 <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,30">
                     <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
                         <StackPanel>
-                            <TextBlock Text="Новый товар" Foreground="#78909C" FontSize="14"/>
-                            <TextBlock Text="240 шт" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                            <TextBlock Text="Новый товар (очередь)" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock x:Name="TotalNewItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
                         </StackPanel>
                     </Border>
+
                     <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
                         <StackPanel>
-                            <TextBlock Text="Принято сегодня" Foreground="#78909C" FontSize="14"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#388E3C"/>
+                            <TextBlock Text="Я принял сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock x:Name="MyIncomingStats" Text="0" FontSize="32" FontWeight="Bold" Foreground="#388E3C"/>
                         </StackPanel>
                     </Border>
+
                     <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
                         <StackPanel>
-                            <TextBlock Text="Отсортировано сегодня" Foreground="#78909C" FontSize="14"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#FBC02D"/>
+                            <TextBlock Text="Я отсортировал сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock x:Name="MySortStats" Text="0" FontSize="32" FontWeight="Bold" Foreground="#FBC02D"/>
                         </StackPanel>
                     </Border>
+
                     <Border Width="300" Background="White" CornerRadius="8" Padding="20" Margin="10">
                         <StackPanel>
-                            <TextBlock Text="Отгружено сегодня" Foreground="#78909C" FontSize="14"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#1976D2"/>
+                            <TextBlock Text="Я отгрузил сегодня" Foreground="#78909C" FontSize="14"/>
+                            <TextBlock x:Name="MyShipmentStats" Text="0" FontSize="32" FontWeight="Bold" Foreground="#1976D2"/>
                         </StackPanel>
                     </Border>
+
                     <Border Width="300" Background="White" CornerRadius="8" Padding="20" BorderBrush="#D32F2F" BorderThickness="1" Margin="10">
                         <StackPanel>
                             <TextBlock Text="Срочный товар" Foreground="#D32F2F" FontSize="14" FontWeight="Bold"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#D32F2F"/>
+                            <TextBlock x:Name="UrgentItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="#D32F2F"/>
                         </StackPanel>
                     </Border>
                 </WrapPanel>
@@ -94,7 +100,7 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="UsersButton" Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoUsers">
+                    <Button x:Name="UsersButton" Width="300" Style="{StaticResource BtnStyle}" Margin="10" Height="110" Click="GoUsers" Visibility="Collapsed">
                         <StackPanel>
                             <TextBlock Text="👥" FontSize="32" HorizontalAlignment="Center"/>
                             <TextBlock Text="Пользователи" FontSize="16" FontWeight="Bold"/>

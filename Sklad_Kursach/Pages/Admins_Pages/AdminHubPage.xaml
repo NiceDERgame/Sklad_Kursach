@@ -1,10 +1,7 @@
 ﻿<Page x:Class="Sklad_Kursach.Pages.AdminHubPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      mc:Ignorable="d" 
-      Title="Панель Администратора" d:DesignHeight="700" d:DesignWidth="1100">
+      Title="Панель Администратора" Loaded="Page_Loaded">
 
     <Grid Background="{StaticResource BrushBackground}">
         <ScrollViewer Padding="40">
@@ -23,8 +20,9 @@
                     <Button Click="GoProfile" Cursor="Hand" Background="Transparent" BorderThickness="0" Grid.Column="1">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Мой профиль" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                            <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushPrimary}">
-                                <TextBlock Text="👤" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
+
+                            <Border x:Name="AvatarBorder" Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushPrimary}">
+                                <TextBlock x:Name="AvatarEmoji" Text="👤" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
                             </Border>
                         </StackPanel>
                     </Button>
@@ -35,38 +33,38 @@
                 <UniformGrid Columns="3" Margin="0,0,0,30">
                     <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,15,15">
                         <StackPanel>
-                            <TextBlock Text="Всего позиций на складе" Foreground="#78909C"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                            <TextBlock Text="Всего позиций" Foreground="#78909C"/>
+                            <TextBlock x:Name="TotalItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
                         </StackPanel>
                     </Border>
                     <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,15,15">
                         <StackPanel>
-                            <TextBlock Text="Новый товар" Foreground="#78909C"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#00ACC1"/>
+                            <TextBlock Text="Принято сегодня" Foreground="#78909C"/>
+                            <TextBlock x:Name="NewItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="#00ACC1"/>
                         </StackPanel>
                     </Border>
                     <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,0,15">
                         <StackPanel>
                             <TextBlock Text="Принято" Foreground="#78909C"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#388E3C"/>
+                            <TextBlock Text="-" FontSize="32" FontWeight="Bold" Foreground="#388E3C"/>
                         </StackPanel>
                     </Border>
                     <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,15,0" BorderBrush="#D32F2F" BorderThickness="1">
                         <StackPanel>
-                            <TextBlock Text="Срочный товар" Foreground="#D32F2F" FontWeight="Bold"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#D32F2F"/>
+                            <TextBlock Text="Истекает срок (3 дня)" Foreground="#D32F2F" FontWeight="Bold"/>
+                            <TextBlock x:Name="UrgentItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="#D32F2F"/>
                         </StackPanel>
                     </Border>
                     <Border Background="White" CornerRadius="8" Padding="20" Margin="0,0,15,0">
                         <StackPanel>
-                            <TextBlock Text="Отсортировано" Foreground="#78909C"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#FBC02D"/>
+                            <TextBlock Text="Отсортировано сегодня" Foreground="#78909C"/>
+                            <TextBlock x:Name="SortedItemsTb" Text="0" FontSize="32" FontWeight="Bold" Foreground="#FBC02D"/>
                         </StackPanel>
                     </Border>
                     <Border Background="White" CornerRadius="8" Padding="20">
                         <StackPanel>
                             <TextBlock Text="Отгружено" Foreground="#78909C"/>
-                            <TextBlock Text="0" FontSize="32" FontWeight="Bold" Foreground="#1976D2"/>
+                            <TextBlock Text="-" FontSize="32" FontWeight="Bold" Foreground="#1976D2"/>
                         </StackPanel>
                     </Border>
                 </UniformGrid>

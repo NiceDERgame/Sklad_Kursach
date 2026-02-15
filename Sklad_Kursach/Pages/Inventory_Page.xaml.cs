@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Sklad_Kursach.Class;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data;
 using System.Data.SqlClient;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 
 namespace Sklad_Kursach.Pages
 {
@@ -12,196 +13,313 @@ namespace Sklad_Kursach.Pages
     {
         public class ProductRow
         {
+            public int LotId { get; set; }
             public string ProductName { get; set; }
             public string Category { get; set; }
-
-            public string DateReceipt { get; set; }
             public int TotalCount { get; set; }
-
-            public string ShelfLife { get; set; }
+            public string DateReceipt { get; set; }
             public string StorageCell { get; set; }
-
+            public string DaysLeft { get; set; }
+            public string FullInfo { get; set; }
         }
+
+        private int _editingLotId = 0;
 
         public Inventory_Page()
         {
             InitializeComponent();
-            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+        }
 
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (UserData.CurrentUser.Role == "Администратор")
+                AdminControlPanel.Visibility = Visibility.Visible;
+            else
+                AdminControlPanel.Visibility = Visibility.Collapsed;
+
+            LoadData();
+        }
+
+        private void LoadData()
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
 
-                // ========================================================
-                // 1. НОВЫЙ ТОВАР (Товары в Lot, которых еще нет в ячейках)
-                // ========================================================
-                string queryNew = @"
-            SELECT 
-                p.[Name] AS ProductName,
-                tt.Type_Tovar_Name AS Category,
-                l.ArrivalDate,
-                l.TotalQuantity,
-                l.ShelfLifeHours
-            FROM dbo.Lot l
-            JOIN dbo.Product p ON l.product_id = p.product_id
-            JOIN dbo.Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
-            -- Исключаем те, которые уже положили в ячейки
-            WHERE l.Lot_id NOT IN (SELECT Lot_id FROM dbo.LotPlacement);";
+                // 1. НОВЫЙ ТОВАР
+                var newItems = new List<ProductRow>();
+                string sqlNew = @"
+                    SELECT l.Lot_id, p.[Name], tt.Type_Tovar_Name, l.TotalQuantity, l.ArrivalDate, l.ShelfLifeHours
+                    FROM Lot l
+                    JOIN Product p ON l.product_id = p.product_id
+                    JOIN Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
+                    WHERE l.Lot_id NOT IN (SELECT Lot_id FROM LotPlacement)";
 
-                SqlCommand cmdNew = new SqlCommand(queryNew, conn);
-                List<ProductRow> newItemsList = new List<ProductRow>();
-
-                using (SqlDataReader reader = cmdNew.ExecuteReader())
+                SqlCommand cmd = new SqlCommand(sqlNew, conn);
+                using (var r = cmd.ExecuteReader())
                 {
-                    while (reader.Read())
+                    while (r.Read())
                     {
-                        newItemsList.Add(new ProductRow
+                        DateTime arr = Convert.ToDateTime(r["ArrivalDate"]);
+                        int hours = Convert.ToInt32(r["ShelfLifeHours"]);
+                        TimeSpan left = arr.AddHours(hours) - DateTime.Now;
+
+                        newItems.Add(new ProductRow
                         {
-                            ProductName = reader["ProductName"].ToString(),
-                            Category = reader["Category"].ToString(),
-                            DateReceipt = Convert.ToDateTime(reader["ArrivalDate"]).ToShortDateString(),
-                            TotalCount = Convert.ToInt32(reader["TotalQuantity"]),
-                            ShelfLife = reader["ShelfLifeHours"].ToString() + " ч.",
-                            StorageCell = "—" // Ячейки еще нет
+                            LotId = Convert.ToInt32(r["Lot_id"]),
+                            ProductName = r["Name"].ToString(),
+                            Category = r["Type_Tovar_Name"].ToString(),
+                            TotalCount = Convert.ToInt32(r["TotalQuantity"]),
+                            DaysLeft = left.TotalDays < 0 ? "ПРОСРОЧЕНО" : $"{left.Days} дн. {left.Hours} ч.",
+                            FullInfo = $"Партия #{r["Lot_id"]}. Прибыл: {arr.ToShortDateString()}"
                         });
                     }
                 }
-                NewItemsGrid.ItemsSource = newItemsList;
+                NewItemsGrid.ItemsSource = newItems;
 
-                // ========================================================
-                // 2. НА СКЛАДЕ (Товары, которые лежат в ячейках)
-                // ========================================================
-                string queryInStock = @"
-                           SELECT 
-                               p.[Name] AS ProductName,
-                               tt.Type_Tovar_Name AS Category,
-                               l.ArrivalDate,
-                               lp.Quantity AS TotalCount,
-                               l.ShelfLifeHours,
-                               sc.CellCode AS StorageCell
-                           FROM dbo.LotPlacement lp
-                           JOIN dbo.Lot l ON lp.Lot_id = l.Lot_id
-                           JOIN dbo.Product p ON l.product_id = p.product_id
-                           JOIN dbo.Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
-                           JOIN dbo.StorageCell sc ON lp.Cell_id = sc.Cell_id;";
+                // 2. НА СКЛАДЕ
+                var stockItems = new List<ProductRow>();
+                // !!! ИЗМЕНЕНИЕ: Добавили l.Lot_id в SELECT, чтобы знать ID для редактирования
+                string sqlStock = @"
+                    SELECT l.Lot_id, p.[Name], sc.CellCode, lp.Quantity, l.ArrivalDate, l.ShelfLifeHours
+                    FROM LotPlacement lp
+                    JOIN Lot l ON lp.Lot_id = l.Lot_id
+                    JOIN Product p ON l.product_id = p.product_id
+                    JOIN StorageCell sc ON lp.Cell_id = sc.Cell_id";
 
-                SqlCommand cmdInStock = new SqlCommand(queryInStock, conn);
-                List<ProductRow> inStockList = new List<ProductRow>();
-
-                using (SqlDataReader reader = cmdInStock.ExecuteReader())
+                cmd.CommandText = sqlStock;
+                using (var r = cmd.ExecuteReader())
                 {
-                    while (reader.Read())
+                    while (r.Read())
                     {
-                        inStockList.Add(new ProductRow
+                        DateTime arr = Convert.ToDateTime(r["ArrivalDate"]);
+                        int hours = Convert.ToInt32(r["ShelfLifeHours"]);
+                        TimeSpan left = arr.AddHours(hours) - DateTime.Now;
+
+                        stockItems.Add(new ProductRow
                         {
-                            ProductName = reader["ProductName"].ToString(),
-                            Category = reader["Category"].ToString(),
-                            DateReceipt = Convert.ToDateTime(reader["ArrivalDate"]).ToShortDateString(),
-                            TotalCount = Convert.ToInt32(reader["TotalCount"]),
-                            ShelfLife = reader["ShelfLifeHours"].ToString() + " ч.",
-                            StorageCell = reader["StorageCell"].ToString()
+                            LotId = Convert.ToInt32(r["Lot_id"]), // Теперь у нас есть ID!
+                            ProductName = r["Name"].ToString(),
+                            StorageCell = r["CellCode"].ToString(),
+                            TotalCount = Convert.ToInt32(r["Quantity"]),
+                            DaysLeft = left.TotalDays < 0 ? "ПРОСРОЧЕНО" : $"{left.Days} дн."
                         });
                     }
                 }
-                InStockGrid.ItemsSource = inStockList;
-
-            //    // ========================================================
-            //    // 3. ДЛЯ ОТГРУЗКИ (Товары, которые собирают по накладной)
-            //    // ========================================================
-            //    string queryForShipment = @"
-            //SELECT 
-            //    p.[Name] AS ProductName,
-            //    tt.Type_Tovar_Name AS Category,
-            //    l.ArrivalDate,
-            //    sp.Quantity AS TotalCount,
-            //    l.ShelfLifeHours,
-            //    sc.CellCode AS StorageCell
-            //FROM dbo.ShipmentPick sp
-            //JOIN dbo.Lot l ON sp.Lot_id = l.Lot_id
-            //JOIN dbo.Product p ON l.product_id = p.product_id
-            //JOIN dbo.Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
-            //JOIN dbo.StorageCell sc ON sp.Cell_id = sc.Cell_id;";
-
-            //    SqlCommand cmdForShipment = new SqlCommand(queryForShipment, conn);
-            //    List<ProductRow> forShipmentList = new List<ProductRow>();
-
-            //    using (SqlDataReader reader = cmdForShipment.ExecuteReader())
-            //    {
-            //        while (reader.Read())
-            //        {
-            //            forShipmentList.Add(new ProductRow
-            //            {
-            //                ProductName = reader["ProductName"].ToString(),
-            //                Category = reader["Category"].ToString(),
-            //                DateReceipt = Convert.ToDateTime(reader["ArrivalDate"]).ToShortDateString(),
-            //                TotalCount = Convert.ToInt32(reader["TotalCount"]),
-            //                ShelfLife = reader["ShelfLifeHours"].ToString() + " ч.",
-            //                StorageCell = reader["StorageCell"].ToString()
-            //            });
-            //        }
-            //    }
-            //    ForShipmentGrid.ItemsSource = forShipmentList;
+                InStockGrid.ItemsSource = stockItems;
             }
-        }
-        private void Page_Loaded(object sender, RoutedEventArgs e)
-        {
-
-
-            {
-                //// Новый товар (без ячейки)
-                //NewItemsGrid.ItemsSource = new List<ProductRow>
-                //{
-                //    new ProductRow { ProductName="Рис 5кг",   Category="Еда", DateReceipt=new DateTime(2026, 2, 5), TotalCount=20, ShelfLife="30 дней", StorageCell="—" },
-                //    new ProductRow { ProductName="Сахар 1кг", Category="Еда", DateReceipt=new DateTime(2026, 2, 6), TotalCount=45, ShelfLife="60 дней", StorageCell="—" },
-                //    new ProductRow { ProductName="Паста",     Category="Еда", DateReceipt=new DateTime(2026, 2, 7), TotalCount=18, ShelfLife="14 дней", StorageCell="—" }
-                //};
-
-                //// На складе (с ячейкой)
-                //InStockGrid.ItemsSource = new List<ProductRow>
-                //{
-                //    new ProductRow { ProductName="Кабель HDMI",     Category="Техника", DateReceipt=new DateTime(2026, 1, 28), TotalCount=35, ShelfLife="90 дней",  StorageCell="B2" },
-                //    new ProductRow { ProductName="Мышь офисная",    Category="Техника", DateReceipt=new DateTime(2026, 1, 15), TotalCount=12, ShelfLife="120 дней", StorageCell="C1" },
-                //    new ProductRow { ProductName="Перчатки латекс", Category="Химия",   DateReceipt=new DateTime(2026, 1, 30), TotalCount=80, ShelfLife="45 дней",  StorageCell="A3" }
-                //};
-
-                //// Для отгрузки (тоже с ячейкой)
-                //ForShipmentGrid.ItemsSource = new List<ProductRow>
-                //{
-                //    new ProductRow { ProductName="Бумага А4",         Category="Другое", DateReceipt=new DateTime(2026, 1, 20), TotalCount=10, ShelfLife="7 дней",  StorageCell="D1" },
-                //    new ProductRow { ProductName="Антисептик 1л",     Category="Химия",  DateReceipt=new DateTime(2026, 1, 25), TotalCount=6,  ShelfLife="3 дня",   StorageCell="A1" },
-                //    new ProductRow { ProductName="Скотч упаковочный", Category="Другое", DateReceipt=new DateTime(2026, 1, 22), TotalCount=15, ShelfLife="10 дней", StorageCell="C2" }
-                //};
-            }
-            InfoBtn.IsEnabled = false;
-            SortBtn.IsEnabled = false;
         }
 
         private void NewItemsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            bool selected = NewItemsGrid.SelectedItem != null;
-            InfoBtn.IsEnabled = selected;
-            SortBtn.IsEnabled = selected;
+            // Если выбрали что-то сверху, сбрасываем выбор снизу (для красоты)
+            if (NewItemsGrid.SelectedItem != null) InStockGrid.SelectedItem = null;
+            SortBtn.IsEnabled = NewItemsGrid.SelectedItem != null;
         }
 
+        // Кнопка Инфо работает для обоих списков
         private void InfoBtn_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Информация (заглушка).");
+            var item = NewItemsGrid.SelectedItem as ProductRow ?? InStockGrid.SelectedItem as ProductRow;
+            if (item != null) MessageBox.Show($"Товар: {item.ProductName}\n{item.FullInfo}\nОстаток срока: {item.DaysLeft}", "Информация");
+            else MessageBox.Show("Выберите товар.");
         }
 
         private void SortBtn_Click(object sender, RoutedEventArgs e)
         {
-            NavigationService?.Navigate(new Sort_Page());
+            var item = NewItemsGrid.SelectedItem as ProductRow;
+            if (item != null)
+                NavigationService.Navigate(new Sort_Page(item.LotId, item.ProductName));
+        }
+
+        // ==========================================
+        // АДМИН: РЕДАКТИРОВАНИЕ (ЛЮБОГО ТОВАРА)
+        // ==========================================
+        private void EditProduct_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Пытаемся взять из "Новых" ИЛИ из "На складе"
+            var item = NewItemsGrid.SelectedItem as ProductRow ?? InStockGrid.SelectedItem as ProductRow;
+
+            if (item == null)
+            {
+                MessageBox.Show("Выберите товар в любой из таблиц для редактирования.");
+                return;
+            }
+
+            _editingLotId = item.LotId;
+            EditNameTb.Text = item.ProductName;
+            EditCountTb.Text = item.TotalCount.ToString();
+
+            LoadShelfLifeFromDB(_editingLotId);
+            EditOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void LoadShelfLifeFromDB(int lotId)
+        {
+            try
+            {
+                string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+                using (SqlConnection conn = new SqlConnection(connStr))
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT ShelfLifeHours FROM Lot WHERE Lot_id = @id", conn);
+                    cmd.Parameters.AddWithValue("@id", lotId);
+                    object result = cmd.ExecuteScalar();
+                    if (result != null) EditLifeTb.Text = result.ToString();
+                }
+            }
+            catch { EditLifeTb.Text = "0"; }
+        }
+
+        private void CancelEdit_Click(object sender, RoutedEventArgs e)
+        {
+            EditOverlay.Visibility = Visibility.Collapsed;
+            _editingLotId = 0;
+        }
+
+        private void SaveEdit_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(EditNameTb.Text) || string.IsNullOrWhiteSpace(EditCountTb.Text) || string.IsNullOrWhiteSpace(EditLifeTb.Text))
+            {
+                MessageBox.Show("Заполните все поля!"); return;
+            }
+
+            int newCount, newLife;
+            if (!int.TryParse(EditCountTb.Text, out newCount) || !int.TryParse(EditLifeTb.Text, out newLife))
+            {
+                MessageBox.Show("Числа введены некорректно."); return;
+            }
+
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                SqlTransaction transaction = conn.BeginTransaction();
+
+                try
+                {
+                    // 1. Обновляем Имя (Product)
+                    string sqlGetProd = "SELECT product_id FROM Lot WHERE Lot_id = @lotId";
+                    SqlCommand cmdGet = new SqlCommand(sqlGetProd, conn, transaction);
+                    cmdGet.Parameters.AddWithValue("@lotId", _editingLotId);
+                    int prodId = (int)cmdGet.ExecuteScalar();
+
+                    string sqlUpdName = "UPDATE Product SET Name = @name WHERE product_id = @pid";
+                    SqlCommand cmdName = new SqlCommand(sqlUpdName, conn, transaction);
+                    cmdName.Parameters.AddWithValue("@name", EditNameTb.Text);
+                    cmdName.Parameters.AddWithValue("@pid", prodId);
+                    cmdName.ExecuteNonQuery();
+
+                    // 2. Обновляем Партию (Lot)
+                    string sqlUpdLot = "UPDATE Lot SET TotalQuantity = @qty, ShelfLifeHours = @life WHERE Lot_id = @lotId";
+                    SqlCommand cmdLot = new SqlCommand(sqlUpdLot, conn, transaction);
+                    cmdLot.Parameters.AddWithValue("@qty", newCount);
+                    cmdLot.Parameters.AddWithValue("@life", newLife);
+                    cmdLot.Parameters.AddWithValue("@lotId", _editingLotId);
+                    cmdLot.ExecuteNonQuery();
+
+                    // 3. !!! ВАЖНО: Если товар уже на полке (LotPlacement), обновляем кол-во и там
+                    string sqlUpdPlace = "UPDATE LotPlacement SET Quantity = @qty WHERE Lot_id = @lotId";
+                    SqlCommand cmdPlace = new SqlCommand(sqlUpdPlace, conn, transaction);
+                    cmdPlace.Parameters.AddWithValue("@qty", newCount);
+                    cmdPlace.Parameters.AddWithValue("@lotId", _editingLotId);
+                    cmdPlace.ExecuteNonQuery();
+
+                    // 4. Обновляем ReceiptItem (для отчетности)
+                    string sqlGetReceipt = "SELECT ReceiptItem_id FROM Lot WHERE Lot_id = @lotId";
+                    SqlCommand cmdGetR = new SqlCommand(sqlGetReceipt, conn, transaction);
+                    cmdGetR.Parameters.AddWithValue("@lotId", _editingLotId);
+                    object rId = cmdGetR.ExecuteScalar();
+
+                    if (rId != null)
+                    {
+                        string sqlUpdR = "UPDATE ReceiptItem SET Quantity = @qty, ShelfLifeHours = @life WHERE ReceiptItem_id = @rid";
+                        SqlCommand cmdR = new SqlCommand(sqlUpdR, conn, transaction);
+                        cmdR.Parameters.AddWithValue("@qty", newCount);
+                        cmdR.Parameters.AddWithValue("@life", newLife);
+                        cmdR.Parameters.AddWithValue("@rid", (int)rId);
+                        cmdR.ExecuteNonQuery();
+                    }
+
+                    transaction.Commit();
+
+                    MessageBox.Show("Товар успешно обновлен!");
+                    EditOverlay.Visibility = Visibility.Collapsed;
+                    LoadData();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Ошибка: " + ex.Message);
+                }
+            }
+        }
+
+        // ==========================================
+        // АДМИН: УДАЛЕНИЕ (Только для новых)
+        // ==========================================
+        // Удалять товар с полки опасно (нарушится история отгрузок), 
+        // поэтому удаление оставим только для "Нового товара".
+        private void DeleteProduct_Click(object sender, RoutedEventArgs e)
+        {
+            var item = NewItemsGrid.SelectedItem as ProductRow;
+
+            // Если выбран товар "На складе"
+            if (item == null && InStockGrid.SelectedItem != null)
+            {
+                MessageBox.Show("Удалять можно только 'Новый товар', который еще не принят на хранение.\nДля товара на складе используйте 'Отгрузку' или редактируйте количество.", "Запрещено");
+                return;
+            }
+
+            if (item == null) { MessageBox.Show("Выберите товар из списка 'Новый товар'."); return; }
+
+            if (MessageBox.Show($"Удалить партию '{item.ProductName}' навсегда?",
+                "Удаление", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+                using (SqlConnection conn = new SqlConnection(connStr))
+                {
+                    conn.Open();
+                    SqlTransaction transaction = conn.BeginTransaction();
+                    try
+                    {
+                        // Чистка логов
+                        SqlCommand cmdCleanLogs = new SqlCommand("DELETE FROM ActionLog WHERE Lot_id = @id", conn, transaction);
+                        cmdCleanLogs.Parameters.AddWithValue("@id", item.LotId);
+                        cmdCleanLogs.ExecuteNonQuery();
+
+                        SqlCommand getRItem = new SqlCommand("SELECT ReceiptItem_id FROM Lot WHERE Lot_id = @id", conn, transaction);
+                        getRItem.Parameters.AddWithValue("@id", item.LotId);
+                        object rId = getRItem.ExecuteScalar();
+
+                        SqlCommand cmdDelLot = new SqlCommand("DELETE FROM Lot WHERE Lot_id = @id", conn, transaction);
+                        cmdDelLot.Parameters.AddWithValue("@id", item.LotId);
+                        cmdDelLot.ExecuteNonQuery();
+
+                        if (rId != null)
+                        {
+                            SqlCommand cmdDelRItem = new SqlCommand("DELETE FROM ReceiptItem WHERE ReceiptItem_id = @rid", conn, transaction);
+                            cmdDelRItem.Parameters.AddWithValue("@rid", (int)rId);
+                            cmdDelRItem.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+                        MessageBox.Show("Партия удалена.");
+                        LoadData();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        MessageBox.Show("Ошибка удаления: " + ex.Message);
+                    }
+                }
+            }
         }
 
         private void GoBack_Click(object sender, RoutedEventArgs e)
         {
-            if (NavigationService?.CanGoBack == true)
-                NavigationService.GoBack();
+            if (NavigationService.CanGoBack) NavigationService.GoBack();
         }
-
-        // Заглушки админ-кнопок (чтобы не ругалось)
-        private void AddProduct_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Добавить (заглушка)");
-        private void EditProduct_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Редактировать (заглушка)");
-        private void DeleteProduct_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Удалить (заглушка)");
     }
 }

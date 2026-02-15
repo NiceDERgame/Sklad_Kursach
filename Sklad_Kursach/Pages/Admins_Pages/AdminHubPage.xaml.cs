@@ -1,8 +1,9 @@
-﻿using System.Windows;
+﻿using Sklad_Kursach.Class;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
-using Sklad_Kursach.Class; // Для UserSession
-using Sklad_Kursach.Pages; // Чтобы видеть Inventory_Page и другие из корня
 
 namespace Sklad_Kursach.Pages
 {
@@ -13,51 +14,49 @@ namespace Sklad_Kursach.Pages
             InitializeComponent();
         }
 
-        // --- НАВИГАЦИЯ ---
-
-        private void GoProfile(object sender, RoutedEventArgs e)
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            NavigationService.Navigate(new Profile_Page());
+            LoadStats();
+            // Загрузка аватарки
+            UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
         }
 
-        private void GoInventory(object sender, RoutedEventArgs e)
+        private void LoadStats()
         {
-            NavigationService.Navigate(new Inventory_Page());
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+
+                SqlCommand cmdTotal = new SqlCommand("SELECT ISNULL(SUM(Quantity), 0) FROM LotPlacement", conn);
+                TotalItemsTb.Text = cmdTotal.ExecuteScalar().ToString();
+
+                SqlCommand cmdNew = new SqlCommand(
+                    "SELECT COUNT(*) FROM ActionLog WHERE ActionType='INCOMING' AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)", conn);
+                NewItemsTb.Text = cmdNew.ExecuteScalar().ToString();
+
+                SqlCommand cmdSort = new SqlCommand(
+                    "SELECT COUNT(*) FROM ActionLog WHERE ActionType='SORT' AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)", conn);
+                SortedItemsTb.Text = cmdSort.ExecuteScalar().ToString();
+
+                string sqlUrgent = @"
+                    SELECT COUNT(*) 
+                    FROM Lot l
+                    LEFT JOIN LotPlacement lp ON l.Lot_id = lp.Lot_id
+                    WHERE DATEADD(hour, l.ShelfLifeHours, CAST(l.ArrivalDate AS DATETIME)) < DATEADD(day, 3, GETDATE())";
+
+                SqlCommand cmdUrgent = new SqlCommand(sqlUrgent, conn);
+                UrgentItemsTb.Text = cmdUrgent.ExecuteScalar().ToString();
+            }
         }
 
-        private void GoLogs(object sender, RoutedEventArgs e)
-        {
-            // Переход на страницу логов (она должна быть создана)
-            NavigationService.Navigate(new Logs_Page());
-        }
-
-        private void GoIncoming(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Incoming_Page());
-        }
-
-        private void GoOutgoing(object sender, RoutedEventArgs e)
-        {
-            // Создай Outgoing_Page.xaml, если нет!
-            //NavigationService.Navigate(new Outgoing_Page());
-        }
-
-        private void GoSorting(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new Sort_Page());
-        }
-
-        private void GoWorkers(object sender, RoutedEventArgs e)
-        {
-            // В XAML Админа кнопка называлась GoWorkers, а страница называется Users_Page
-            NavigationService.Navigate(new Users_Page());
-        }
-
-        private void Logout(object sender, RoutedEventArgs e)
-        {
-            //UserSession.UserID = null;
-            //UserSession.UserRole = null;
-            NavigationService.Navigate(new Auth_Page());
-        }
+        private void GoProfile(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Profile_Page());
+        private void GoInventory(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Inventory_Page());
+        private void GoLogs(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Logs_Page());
+        private void GoIncoming(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Incoming_Page());
+        private void GoOutgoing(object sender, RoutedEventArgs e) { }
+        private void GoSorting(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Sort_Page(0, ""));
+        private void GoWorkers(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Users_Page());
+        private void Logout(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
     }
 }
