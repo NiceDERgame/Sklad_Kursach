@@ -17,7 +17,7 @@
             </Border.Effect>
 
             <StackPanel>
-                <TextBlock Text="📦 ОМОН СКЛАД" FontSize="28" FontWeight="Bold" 
+                <TextBlock Text="📦 ОРГООН СКЛАД" FontSize="28" FontWeight="Bold" 
                            Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 <TextBlock Text="Вход в систему учета" FontSize="14" Foreground="{StaticResource BrushTextSecondary}" 
                            HorizontalAlignment="Center" Margin="0,0,0,30"/>

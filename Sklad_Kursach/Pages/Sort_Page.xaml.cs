@@ -36,9 +36,7 @@ namespace Sklad_Kursach.Pages
             LoadZonesAndCells();
         }
 
-        // ==========================================
         // 1. ГЕНЕРАЦИЯ КНОПОК (ИНТЕРФЕЙС)
-        // ==========================================
         private void LoadZonesAndCells()
         {
             ZonesContainer.Children.Clear(); // Очищаем контейнер перед загрузкой
@@ -47,7 +45,6 @@ namespace Sklad_Kursach.Pages
             {
                 conn.Open();
 
-                // Шаг 1: Получаем список всех ЗОН
                 // Используем List, чтобы сохранить данные и закрыть DataReader, 
                 // иначе нельзя будет делать вложенные запросы для ячеек.
                 var zones = new List<Tuple<int, string>>();
@@ -67,7 +64,6 @@ namespace Sklad_Kursach.Pages
                     int zoneId = zone.Item1;
                     string zoneName = zone.Item2;
 
-                    // Создаем красивую белую карточку (Border)
                     Border card = new Border
                     {
                         Background = Brushes.White,
@@ -77,10 +73,8 @@ namespace Sklad_Kursach.Pages
                         BorderBrush = (SolidColorBrush)new BrushConverter().ConvertFrom("#E0E0E0"),
                         BorderThickness = new Thickness(1)
                     };
-                    // Добавляем тень
                     card.Effect = new DropShadowEffect { BlurRadius = 15, Opacity = 0.1, ShadowDepth = 2, Color = Colors.Black };
 
-                    // Внутри карточки вертикальный стек: Заголовок + Панель кнопок
                     StackPanel stack = new StackPanel();
 
                     // Заголовок зоны (например "Зона А (Еда)")
@@ -151,9 +145,7 @@ namespace Sklad_Kursach.Pages
             }
         }
 
-        // ==========================================
         // 2. ЛОГИКА СОХРАНЕНИЯ (ТРАНЗАКЦИЯ)
-        // ==========================================
 
         private void Cell_Click(object sender, RoutedEventArgs e)
         {
