@@ -10,7 +10,6 @@
 
     <Grid Background="{StaticResource BrushBackground}">
 
-        <!-- ================= РЕСУРСЫ ================= -->
         <Grid.Resources>
 
             <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
@@ -28,7 +27,6 @@
                 <Setter Property="Margin" Value="0,0,0,10"/>
             </Style>
 
-            <!-- TextBox: на основе твоего InputStyle -->
             <Style x:Key="TextPretty" TargetType="TextBox" BasedOn="{StaticResource InputStyle}">
                 <Setter Property="FontFamily" Value="Segoe UI"/>
                 <Setter Property="FontSize" Value="14"/>
@@ -37,10 +35,10 @@
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
 
-            <!-- ComboBox: ровный текст и нормальное выравнивание -->
             <Style x:Key="ComboPretty" TargetType="ComboBox">
                 <Setter Property="FontFamily" Value="Segoe UI"/>
                 <Setter Property="FontSize" Value="14"/>
+                <Setter Property="IsEditable" Value="True"/>
                 <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
                 <Setter Property="Height" Value="40"/>
                 <Setter Property="Background" Value="White"/>
@@ -57,10 +55,15 @@
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"/>
 
-                                <ContentPresenter Margin="12,0,36,0"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Left"
-                                                  Content="{TemplateBinding SelectionBoxItem}"/>
+                                <TextBox x:Name="PART_EditableTextBox"
+                                         Margin="12,0,36,0"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         VerticalContentAlignment="Center"
+                                         HorizontalAlignment="Left"
+                                         FontFamily="{TemplateBinding FontFamily}"
+                                         FontSize="{TemplateBinding FontSize}"
+                                         Foreground="{TemplateBinding Foreground}"/>
 
                                 <ToggleButton Focusable="False"
                                               IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
@@ -126,7 +129,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ================= ШАПКА ================= -->
         <StackPanel Grid.Row="0" Margin="40,40,40,20">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Content="⬅"
@@ -151,7 +153,6 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- ================= КОНТЕНТ (АДАПТИВНЫЙ) ================= -->
         <Grid Grid.Row="1" Margin="40,0,40,40" x:Name="ContentGrid">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -164,7 +165,6 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Инструкция -->
             <Border x:Name="HelpCard"
                     Grid.Row="0" Grid.Column="0"
                     Background="#FAFBFD"
@@ -204,7 +204,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Форма -->
             <Border x:Name="FormCard"
                     Grid.Row="0" Grid.Column="2"
                     Background="White"
@@ -230,41 +229,41 @@
                     <TextBox x:Name="Tovar_Name" Style="{StaticResource TextPretty}"/>
 
                     <TextBlock Text="Категория" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
-                    <ComboBox x:Name="CategoryCb" Style="{StaticResource ComboPretty}"/>
+                    <ComboBox x:Name="CategoryCb" Style="{StaticResource ComboPretty}" IsEditable="True"/>
 
                     <TextBlock Text="Дата прибытия" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
                     <DatePicker x:Name="ReceiptDateDp" Style="{StaticResource DatePretty}"/>
 
-					<Grid Margin="0,14,0,0">
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="10"/>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="10"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-						<StackPanel Grid.Column="0">
-							<TextBlock Text="Общее кол-во" Style="{StaticResource SectionTitleStyle}"/>
-							<TextBox x:Name="TotalCountTb"
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Общее кол-во" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBox x:Name="TotalCountTb"
                                      Style="{StaticResource TextPretty}"
                                      PreviewTextInput="NumberValidation"/>
-						</StackPanel>
+                        </StackPanel>
 
-						<StackPanel Grid.Column="2">
-							<TextBlock Text="Цена за 1 шт" Style="{StaticResource SectionTitleStyle}"/>
-							<TextBox x:Name="PriceTb"
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Цена за 1 шт" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBox x:Name="PriceTb"
                                      Style="{StaticResource TextPretty}"
                                      PreviewTextInput="NumberValidation"/>
-						</StackPanel>
+                        </StackPanel>
 
-						<StackPanel Grid.Column="4">
-							<TextBlock Text="Срок хранения (часов)" Style="{StaticResource SectionTitleStyle}"/>
-							<TextBox x:Name="ShelfLifeTb"
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Срок хранения (часов)" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBox x:Name="ShelfLifeTb"
                                      Style="{StaticResource TextPretty}"
                                      PreviewTextInput="NumberValidation"/>
-						</StackPanel>
-					</Grid>
+                        </StackPanel>
+                    </Grid>
 
                     <TextBlock Text="Поставщик" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
                     <ComboBox x:Name="SupplierCb" Style="{StaticResource ComboPretty}"/>
@@ -276,7 +275,6 @@
                             Click="Accept_Click"/>
                 </StackPanel>
             </Border>
-
         </Grid>
     </Grid>
 </Page>

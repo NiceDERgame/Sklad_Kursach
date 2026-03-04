@@ -16,6 +16,8 @@ namespace Sklad_Kursach.Pages
         public Incoming_Page()
         {
             InitializeComponent();
+            CategoryCb.IsEditable = true;
+            
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
