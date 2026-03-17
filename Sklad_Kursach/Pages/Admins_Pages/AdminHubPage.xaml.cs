@@ -17,7 +17,6 @@ namespace Sklad_Kursach.Pages
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             LoadStats();
-            // Загрузка аватарки
             UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
         }
 
@@ -28,22 +27,17 @@ namespace Sklad_Kursach.Pages
             {
                 conn.Open();
 
-                // 1. Всего позиций на складе
                 SqlCommand cmdTotal = new SqlCommand("SELECT ISNULL(SUM(Quantity), 0) FROM LotPlacement", conn);
                 TotalItemsTb.Text = cmdTotal.ExecuteScalar().ToString();
 
-                // 2. Принято сегодня
                 SqlCommand cmdNew = new SqlCommand(
                     "SELECT COUNT(*) FROM ActionLog WHERE ActionType='INCOMING' AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)", conn);
                 NewItemsTb.Text = cmdNew.ExecuteScalar().ToString();
 
-                // 3. Отсортировано сегодня
                 SqlCommand cmdSort = new SqlCommand(
                     "SELECT COUNT(*) FROM ActionLog WHERE ActionType='SORT' AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)", conn);
                 SortedItemsTb.Text = cmdSort.ExecuteScalar().ToString();
 
-                // 4. Срочный товар (срок < 3 дней)
-                // !!! ИСПРАВЛЕНИЕ ЗДЕСЬ: Добавлено CAST(l.ArrivalDate AS DATETIME)
                 string sqlUrgent = @"
                     SELECT COUNT(*) 
                     FROM Lot l
@@ -60,8 +54,7 @@ namespace Sklad_Kursach.Pages
         private void GoLogs(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Logs_Page());
         private void GoIncoming(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Incoming_Page());
         private void GoOutgoing(object sender, RoutedEventArgs e) { }
-        private void GoSorting(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Sort_Page(0, ""));
         private void GoWorkers(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Users_Page());
-        private void Logout(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
+        private void Logout_Click(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
     }
 }

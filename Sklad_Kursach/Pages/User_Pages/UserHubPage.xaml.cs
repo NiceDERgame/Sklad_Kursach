@@ -19,7 +19,6 @@ namespace Sklad_Kursach.Pages
             WelcomeTb.Text = $"С возвращением, {UserData.CurrentUser.FirstName}";
             LoadUserStats();
 
-            // Загрузка аватарки с подменой
             UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
         }
 
@@ -74,9 +73,8 @@ namespace Sklad_Kursach.Pages
         private void GoProfile(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Profile_Page());
         private void GoInventory(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Inventory_Page());
         private void GoIncoming(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Incoming_Page());
-        private void GoSorting(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Sort_Page(0, ""));
         private void GoOutgoing(object sender, RoutedEventArgs e) { }
         private void GoUsers(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Users_Page());
-        private void Logout(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
+        private void Logout_Click(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
     }
 }
