@@ -1,10 +1,12 @@
 ﻿using Sklad_Kursach.Class;
+using Sklad_Kursach.Services;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -155,6 +157,9 @@ namespace Sklad_Kursach.Pages
 
             try
             {
+                DateTime arrivalDateTime = ReceiptDateDp.SelectedDate.Value.Date + DateTime.Now.TimeOfDay;
+                int createdReceiptId = 0;
+
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
                     conn.Open();
@@ -162,8 +167,6 @@ namespace Sklad_Kursach.Pages
                     using (SqlCommand cmd = new SqlCommand("dbo.AddIncomingProduct", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
-                        DateTime arrivalDateTime = ReceiptDateDp.SelectedDate.Value.Date + DateTime.Now.TimeOfDay;
 
                         cmd.Parameters.Add("@ProductName", SqlDbType.NVarChar, 100).Value = Tovar_Name.Text.Trim();
                         cmd.Parameters.Add("@TypeID", SqlDbType.Int).Value = typeId;
@@ -176,11 +179,49 @@ namespace Sklad_Kursach.Pages
                         cmd.Parameters.Add("@ShelfLifeHours", SqlDbType.Int).Value = shelfLifeHours;
                         cmd.Parameters.Add("@ArrivalDate", SqlDbType.DateTime).Value = arrivalDateTime;
 
-                        cmd.ExecuteNonQuery();
+                        object result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                            createdReceiptId = Convert.ToInt32(result);
                     }
                 }
 
-                MessageBox.Show("Товар успешно принят!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (createdReceiptId <= 0)
+                {
+                    MessageBox.Show("Приёмка сохранена, но Receipt_id не вернулся из процедуры.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var invoiceItems = new List<ReceiptInvoiceItem>
+                {
+                    new ReceiptInvoiceItem
+                    {
+                        RowNumber = 1,
+                        ProductName = Tovar_Name.Text.Trim(),
+                        CategoryName = CategoryCb.Text.Trim(),
+                        Quantity = quantity,
+                        Price = price,
+                        ShelfLifeHours = shelfLifeHours
+                    }
+                };
+
+                string acceptedBy = GetCurrentUserFullName();
+                string supplierName = SupplierCb.Text.Trim();
+                string warehouseName = "Основной склад";
+
+                string createdInvoicePath = GenerateReceiptInvoiceAfterSave(
+                    connStr,
+                    createdReceiptId,
+                    supplierName,
+                    warehouseName,
+                    acceptedBy,
+                    invoiceItems);
+
+                MessageBox.Show(
+                    "Товар успешно принят!\n\nНакладная создана:\n" + createdInvoicePath,
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
                 NavigationService?.GoBack();
             }
             catch (SqlException ex)
@@ -191,6 +232,103 @@ namespace Sklad_Kursach.Pages
             {
                 MessageBox.Show($"Ошибка базы данных:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private string GenerateReceiptInvoiceAfterSave(
+            string connStr,
+            int receiptId,
+            string supplierName,
+            string warehouseName,
+            string acceptedBy,
+            List<ReceiptInvoiceItem> items)
+        {
+            string docNumber = $"PR-{DateTime.Now:yyyy}-{receiptId:D5}";
+
+            var invoiceData = new ReceiptInvoiceData
+            {
+                ReceiptId = receiptId,
+                DocumentNumber = docNumber,
+                DocumentDate = DateTime.Now,
+                SupplierName = string.IsNullOrWhiteSpace(supplierName) ? "Не указан" : supplierName,
+                WarehouseName = string.IsNullOrWhiteSpace(warehouseName) ? "Основной склад" : warehouseName,
+                AcceptedBy = string.IsNullOrWhiteSpace(acceptedBy) ? "Не указан" : acceptedBy,
+                Items = items ?? new List<ReceiptInvoiceItem>()
+            };
+
+            string fullPath = ReceiptInvoiceService.CreateInvoiceDocx(invoiceData);
+            SaveReceiptInvoiceInfoToDatabase(connStr, receiptId, docNumber, fullPath);
+
+            return fullPath;
+        }
+
+        private void SaveReceiptInvoiceInfoToDatabase(string connStr, int receiptId, string documentNumber, string fullPath)
+        {
+            string fileName = Path.GetFileName(fullPath);
+
+            string sql = @"
+INSERT INTO dbo.ReceiptDocument
+(
+    Receipt_id,
+    DocumentNumber,
+    FileName,
+    FilePath,
+    CreatedAt,
+    CreatedByEmployee_id
+)
+VALUES
+(
+    @ReceiptID,
+    @DocumentNumber,
+    @FileName,
+    @FilePath,
+    GETDATE(),
+    @CreatedByEmployeeID
+)";
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.Add("@ReceiptID", SqlDbType.Int).Value = receiptId;
+                    cmd.Parameters.Add("@DocumentNumber", SqlDbType.NVarChar, 50).Value = documentNumber;
+                    cmd.Parameters.Add("@FileName", SqlDbType.NVarChar, 255).Value = fileName;
+                    cmd.Parameters.Add("@FilePath", SqlDbType.NVarChar, 500).Value = fullPath;
+                    cmd.Parameters.Add("@CreatedByEmployeeID", SqlDbType.Int).Value = UserData.CurrentUser.EmployeeId;
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private string GetCurrentUserFullName()
+        {
+            try
+            {
+                if (UserData.CurrentUser == null)
+                    return "Не указан";
+
+                var type = UserData.CurrentUser.GetType();
+
+                string lastName = type.GetProperty("LastName")?.GetValue(UserData.CurrentUser)?.ToString() ?? "";
+                string firstName = type.GetProperty("FirstName")?.GetValue(UserData.CurrentUser)?.ToString() ?? "";
+                string middleName = type.GetProperty("MiddleName")?.GetValue(UserData.CurrentUser)?.ToString() ?? "";
+
+                string fullName = $"{lastName} {firstName} {middleName}".Trim();
+
+                if (!string.IsNullOrWhiteSpace(fullName))
+                    return fullName;
+
+                string login = type.GetProperty("Login")?.GetValue(UserData.CurrentUser)?.ToString() ?? "";
+                if (!string.IsNullOrWhiteSpace(login))
+                    return login;
+            }
+            catch
+            {
+            }
+
+            return "Не указан";
         }
 
         private void NumberValidation(object sender, TextCompositionEventArgs e)

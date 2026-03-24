@@ -264,3 +264,17 @@ ALTER COLUMN ArrivalDate DATETIME NOT NULL;
 
 ALTER TABLE dbo.Lot
 ALTER COLUMN ArrivalDate DATETIME NOT NULL;
+
+
+CREATE TABLE dbo.ReceiptDocument
+(
+    ReceiptDocument_id INT IDENTITY(1,1) PRIMARY KEY,
+    Receipt_id INT NOT NULL,
+    DocumentNumber NVARCHAR(50) NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    FilePath NVARCHAR(500) NOT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    CreatedByEmployee_id INT NULL,
+    CONSTRAINT FK_ReceiptDocument_Receipt
+        FOREIGN KEY (Receipt_id) REFERENCES dbo.Receipt(Receipt_id)
+);
