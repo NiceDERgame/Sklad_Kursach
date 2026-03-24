@@ -163,17 +163,10 @@ CREATE TABLE dbo.ActionLog (
 );
 
 
-ALTER TABLE dbo.Receipt
-DROP CONSTRAINT DF__Receipt__Receipt__6477ECF3;
+IF OBJECT_ID('dbo.AddIncomingProduct', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.AddIncomingProduct;
 
-ALTER TABLE dbo.Receipt
-ALTER COLUMN ReceiptDate DATETIME NOT NULL;
-
-ALTER TABLE dbo.Receipt
-ADD CONSTRAINT DF_Receipt_ReceiptDate
-DEFAULT (GETDATE()) FOR ReceiptDate;
-
-CREATE PROCEDURE [dbo].[AddIncomingProduct]
+CREATE PROCEDURE dbo.AddIncomingProduct
     @ProductName NVARCHAR(100),
     @TypeID INT,
     @ProviderID INT,
@@ -203,18 +196,20 @@ BEGIN
         END
 
         DECLARE @ReceiptID INT;
+
         INSERT INTO dbo.Receipt (ReceiptNumber, provider_id, employee_id, ReceiptDate, TotalSum)
         VALUES (
-            'REC-' + CAST(NEWID() AS NVARCHAR(36)),
+            N'REC-' + CONVERT(NVARCHAR(36), NEWID()),
             @ProviderID,
             @EmployeeID,
             @ArrivalDate,
-            (@Quantity * @Price)
+            @Quantity * @Price
         );
 
         SET @ReceiptID = SCOPE_IDENTITY();
 
         DECLARE @ReceiptItemID INT;
+
         INSERT INTO dbo.ReceiptItem (Receipt_id, product_id, Quantity, Price, ShelfLifeHours, ArrivalDate)
         VALUES (
             @ReceiptID,
@@ -228,6 +223,7 @@ BEGIN
         SET @ReceiptItemID = SCOPE_IDENTITY();
 
         DECLARE @LotID INT;
+
         INSERT INTO dbo.Lot (ReceiptItem_id, product_id, ArrivalDate, ShelfLifeHours, TotalQuantity)
         VALUES (
             @ReceiptItemID,
@@ -252,7 +248,19 @@ BEGIN
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        ROLLBACK TRANSACTION;
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
         THROW;
     END CATCH
 END
+
+
+
+USE Warehouse_DB_V3;
+GO
+
+ALTER TABLE dbo.ReceiptItem
+ALTER COLUMN ArrivalDate DATETIME NOT NULL;
+
+ALTER TABLE dbo.Lot
+ALTER COLUMN ArrivalDate DATETIME NOT NULL;
