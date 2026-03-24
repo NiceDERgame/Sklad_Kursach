@@ -38,7 +38,9 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridCell">
-                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                            <Border Padding="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding Background}"
+                                    SnapsToDevicePixels="True">
                                 <ContentPresenter VerticalAlignment="Center"/>
                             </Border>
                         </ControlTemplate>
@@ -59,27 +61,68 @@
 
         <StackPanel Margin="40,40,40,20">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="⬅" Width="50" Height="50" Margin="0,0,20,0" Style="{StaticResource BtnStyle}" Click="GoBack_Click" FontSize="24" Padding="0,0,0,4"/>
-                <TextBlock Text="📦" FontSize="32" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                <Button Content="⬅"
+                        Width="50"
+                        Height="50"
+                        Margin="0,0,20,0"
+                        Style="{StaticResource BtnStyle}"
+                        Click="GoBack_Click"
+                        FontSize="24"
+                        Padding="0,0,0,4"/>
+
+                <TextBlock Text="📦"
+                           FontSize="32"
+                           Margin="0,0,15,0"
+                           VerticalAlignment="Center"/>
+
                 <StackPanel>
-                    <TextBlock Text="ИНВЕНТАРИЗАЦИЯ" FontSize="28" FontWeight="Bold" Foreground="{StaticResource BrushPrimaryDark}"/>
-                    <TextBlock Text="Управление товарами на складе" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
+                    <TextBlock Text="ИНВЕНТАРИЗАЦИЯ"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource BrushPrimaryDark}"/>
+                    <TextBlock Text="Управление товарами на складе"
+                               FontSize="14"
+                               Foreground="{StaticResource BrushTextSecondary}"/>
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel x:Name="AdminControlPanel" Orientation="Horizontal" Margin="70,20,0,0" Visibility="Collapsed">
-                <Button Content="✎ Редактировать" Style="{StaticResource BtnStyle}" Background="#FFA000" Width="160" Height="40" Margin="0,0,15,0" Click="EditProduct_Click"/>
-                <Button Content="🗑 Удалить партию" Style="{StaticResource BtnStyle}" Background="#D32F2F" Width="160" Height="40" Click="DeleteProduct_Click"/>
+            <StackPanel x:Name="AdminControlPanel"
+                        Orientation="Horizontal"
+                        Margin="70,20,0,0"
+                        Visibility="Collapsed">
+                <Button Content="✎ Редактировать"
+                        Style="{StaticResource BtnStyle}"
+                        Background="#FFA000"
+                        Width="160"
+                        Height="40"
+                        Margin="0,0,15,0"
+                        Click="EditProduct_Click"/>
+
+                <Button Content="🗑 Удалить партию"
+                        Style="{StaticResource BtnStyle}"
+                        Background="#D32F2F"
+                        Width="160"
+                        Height="40"
+                        Click="DeleteProduct_Click"/>
             </StackPanel>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1">
             <StackPanel Margin="40,0,40,40">
 
-                <Border Background="White" CornerRadius="12" Padding="20" Margin="0,0,0,25" BorderBrush="#EEEEEE" BorderThickness="1">
+                <Border Background="White"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,0,25"
+                        BorderBrush="#EEEEEE"
+                        BorderThickness="1">
                     <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" Opacity="0.08" ShadowDepth="4" Color="Black"/>
+                        <DropShadowEffect BlurRadius="20"
+                                          Opacity="0.08"
+                                          ShadowDepth="4"
+                                          Color="Black"/>
                     </Border.Effect>
+
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -92,38 +135,87 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Background="#E8F5E9" CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
-                                <TextBlock Text="🟢 Новый товар" FontSize="14" FontWeight="Bold" Foreground="#2E7D32"/>
+
+                            <Border Background="#E8F5E9"
+                                    CornerRadius="4"
+                                    Padding="8,4"
+                                    HorizontalAlignment="Left">
+                                <TextBlock Text="🟢 Новый товар"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="#2E7D32"/>
                             </Border>
-                            <TextBlock Grid.Column="1" Text="Нажмите на товар, чтобы переместить его на полку" 
-                                       VerticalAlignment="Center" Margin="15,0,0,0" Foreground="#90A4AE" FontStyle="Italic"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="Нажмите на товар, чтобы переместить его на полку"
+                                       VerticalAlignment="Center"
+                                       Margin="15,0,0,0"
+                                       Foreground="#90A4AE"
+                                       FontStyle="Italic"/>
                         </Grid>
 
-                        <DataGrid Grid.Row="1" x:Name="NewItemsGrid" AutoGenerateColumns="False" IsReadOnly="True" 
-                                  SelectionMode="Single" SelectionChanged="NewItemsGrid_SelectionChanged"
-                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F5F5F5" VerticalGridLinesBrush="Transparent"
-                                  Background="Transparent" BorderThickness="0" HeadersVisibility="Column"
+                        <DataGrid Grid.Row="1"
+                                  x:Name="NewItemsGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="NewItemsGrid_SelectionChanged"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="#F5F5F5"
+                                  VerticalGridLinesBrush="Transparent"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  HeadersVisibility="Column"
                                   AlternatingRowBackground="#FAFAFA">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Название товара" Binding="{Binding ProductName}" Width="2*"/>
                                 <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="150"/>
                                 <DataGridTextColumn Header="Кол-во" Binding="{Binding TotalCount}" Width="100"/>
-                                <DataGridTextColumn Header="Остаток срока" Binding="{Binding DaysLeft}" Width="150" ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
+                                <DataGridTextColumn Header="Остаток срока"
+                                                    Binding="{Binding DaysLeft}"
+                                                    Width="150"
+                                                    ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-                            <Button x:Name="InfoBtn" Content="ℹ Инфо" Background="White" Foreground="#546E7A" BorderBrush="#CFD8DC" BorderThickness="1" 
-                                    Width="100" Height="40" Margin="0,0,10,0" Click="InfoBtn_Click"/>
-                            <Button x:Name="SortBtn" Content="📍 Разместить" Width="140" Height="40" Click="SortBtn_Click" IsEnabled="False"/>
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,15,0,0">
+                            <Button x:Name="InfoBtn"
+                                    Content="ℹ Инфо"
+                                    Background="White"
+                                    Foreground="#546E7A"
+                                    BorderBrush="#CFD8DC"
+                                    BorderThickness="1"
+                                    Width="100"
+                                    Height="40"
+                                    Margin="0,0,10,0"
+                                    Click="InfoBtn_Click"/>
+
+                            <Button x:Name="SortBtn"
+                                    Content="📍 Разместить"
+                                    Width="140"
+                                    Height="40"
+                                    Click="SortBtn_Click"
+                                    IsEnabled="False"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <Border Background="White" CornerRadius="12" Padding="20" Margin="0,0,0,20" BorderBrush="#EEEEEE" BorderThickness="1">
+                <Border Background="White"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,0,20"
+                        BorderBrush="#EEEEEE"
+                        BorderThickness="1">
                     <Border.Effect>
-                        <DropShadowEffect BlurRadius="20" Opacity="0.08" ShadowDepth="4" Color="Black"/>
+                        <DropShadowEffect BlurRadius="20"
+                                          Opacity="0.08"
+                                          ShadowDepth="4"
+                                          Color="Black"/>
                     </Border.Effect>
+
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -131,20 +223,36 @@
                         </Grid.RowDefinitions>
 
                         <Grid Margin="0,0,0,15">
-                            <Border Background="#FFF8E1" CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
-                                <TextBlock Text="🟡 Товар на складе" FontSize="14" FontWeight="Bold" Foreground="#F57F17"/>
+                            <Border Background="#FFF8E1"
+                                    CornerRadius="4"
+                                    Padding="8,4"
+                                    HorizontalAlignment="Left">
+                                <TextBlock Text="🟡 Товар на складе"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="#F57F17"/>
                             </Border>
                         </Grid>
 
-                        <DataGrid Grid.Row="1" x:Name="InStockGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F5F5F5" VerticalGridLinesBrush="Transparent"
-                                  Background="Transparent" BorderThickness="0" HeadersVisibility="Column"
+                        <DataGrid Grid.Row="1"
+                                  x:Name="InStockGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="#F5F5F5"
+                                  VerticalGridLinesBrush="Transparent"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  HeadersVisibility="Column"
                                   AlternatingRowBackground="#FAFAFA">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Название товара" Binding="{Binding ProductName}" Width="2*"/>
                                 <DataGridTextColumn Header="Ячейка" Binding="{Binding StorageCell}" Width="100" FontWeight="Bold"/>
                                 <DataGridTextColumn Header="Кол-во" Binding="{Binding TotalCount}" Width="100"/>
-                                <DataGridTextColumn Header="Остаток срока" Binding="{Binding DaysLeft}" Width="150"/>
+                                <DataGridTextColumn Header="Остаток срока"
+                                                    Binding="{Binding DaysLeft}"
+                                                    Width="150"
+                                                    ElementStyle="{StaticResource ShelfLifeTextStyle}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
@@ -155,16 +263,29 @@
         <Grid x:Name="EditOverlay" Grid.RowSpan="2" Visibility="Collapsed">
             <Border Background="Black" Opacity="0.5" MouseDown="CancelEdit_Click"/>
 
-            <Border Background="White" Width="400" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="12" Padding="30">
+            <Border Background="White"
+                    Width="400"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    CornerRadius="12"
+                    Padding="30">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="30" Opacity="0.3"/>
                 </Border.Effect>
 
                 <StackPanel>
-                    <TextBlock Text="Редактирование партии" FontSize="20" FontWeight="Bold" Margin="0,0,0,20" Foreground="{StaticResource BrushPrimary}"/>
+                    <TextBlock Text="Редактирование партии"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Margin="0,0,0,20"
+                               Foreground="{StaticResource BrushPrimary}"/>
 
-                    <TextBlock Text="Название товара (в каталоге)" Foreground="#78909C" Margin="0,0,0,5"/>
-                    <TextBox x:Name="EditNameTb" Style="{StaticResource InputStyle}" Margin="0,0,0,15"/>
+                    <TextBlock Text="Название товара (в каталоге)"
+                               Foreground="#78909C"
+                               Margin="0,0,0,5"/>
+                    <TextBox x:Name="EditNameTb"
+                             Style="{StaticResource InputStyle}"
+                             Margin="0,0,0,15"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -174,19 +295,34 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Количество (шт)" Foreground="#78909C" Margin="0,0,0,5"/>
-                            <TextBox x:Name="EditCountTb" Style="{StaticResource InputStyle}"/>
+                            <TextBlock Text="Количество (шт)"
+                                       Foreground="#78909C"
+                                       Margin="0,0,0,5"/>
+                            <TextBox x:Name="EditCountTb"
+                                     Style="{StaticResource InputStyle}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="Срок хранения (часов)" Foreground="#78909C" Margin="0,0,0,5"/>
-                            <TextBox x:Name="EditLifeTb" Style="{StaticResource InputStyle}"/>
+                            <TextBlock Text="Срок хранения (часов)"
+                                       Foreground="#78909C"
+                                       Margin="0,0,0,5"/>
+                            <TextBox x:Name="EditLifeTb"
+                                     Style="{StaticResource InputStyle}"/>
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,25,0,0">
-                        <Button Content="Отмена" Background="Transparent" Foreground="Gray" Click="CancelEdit_Click" Margin="0,0,10,0"/>
-                        <Button Content="Сохранить" Style="{StaticResource BtnStyle}" Click="SaveEdit_Click" Width="120"/>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,25,0,0">
+                        <Button Content="Отмена"
+                                Background="Transparent"
+                                Foreground="Gray"
+                                Click="CancelEdit_Click"
+                                Margin="0,0,10,0"/>
+                        <Button Content="Сохранить"
+                                Style="{StaticResource BtnStyle}"
+                                Click="SaveEdit_Click"
+                                Width="120"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

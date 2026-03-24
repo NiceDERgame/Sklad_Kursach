@@ -50,11 +50,11 @@ namespace Sklad_Kursach.Pages
                 // 1. НОВЫЙ ТОВАР
                 var newItems = new List<ProductRow>();
                 string sqlNew = @"
-                    SELECT l.Lot_id, p.[Name], tt.Type_Tovar_Name, l.TotalQuantity, l.ArrivalDate, l.ShelfLifeHours
-                    FROM Lot l
-                    JOIN Product p ON l.product_id = p.product_id
-                    JOIN Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
-                    WHERE l.Lot_id NOT IN (SELECT Lot_id FROM LotPlacement)";
+            SELECT l.Lot_id, p.[Name], tt.Type_Tovar_Name, l.TotalQuantity, l.ArrivalDate, l.ShelfLifeHours
+            FROM Lot l
+            JOIN Product p ON l.product_id = p.product_id
+            JOIN Type_Tovar tt ON p.type_Tovar_id = tt.type_Tovar_id
+            WHERE l.Lot_id NOT IN (SELECT Lot_id FROM LotPlacement)";
 
                 SqlCommand cmd = new SqlCommand(sqlNew, conn);
                 using (var r = cmd.ExecuteReader())
@@ -65,14 +65,18 @@ namespace Sklad_Kursach.Pages
                         int hours = Convert.ToInt32(r["ShelfLifeHours"]);
                         TimeSpan left = arr.AddHours(hours) - DateTime.Now;
 
+                        string daysLeftText = left.TotalSeconds <= 0
+                            ? "ПРОСРОЧЕНО"
+                            : $"{(int)left.TotalDays} дн. {left.Hours} ч.";
+
                         newItems.Add(new ProductRow
                         {
                             LotId = Convert.ToInt32(r["Lot_id"]),
                             ProductName = r["Name"].ToString(),
                             Category = r["Type_Tovar_Name"].ToString(),
                             TotalCount = Convert.ToInt32(r["TotalQuantity"]),
-                            DaysLeft = left.TotalDays < 0 ? "ПРОСРОЧЕНО" : $"{left.Days} дн. {left.Hours} ч.",
-                            FullInfo = $"Партия #{r["Lot_id"]}. Прибыл: {arr.ToShortDateString()}"
+                            DaysLeft = daysLeftText,
+                            FullInfo = $"Партия #{r["Lot_id"]}. Прибыл: {arr:dd.MM.yyyy HH:mm}"
                         });
                     }
                 }
@@ -81,11 +85,11 @@ namespace Sklad_Kursach.Pages
                 // 2. НА СКЛАДЕ
                 var stockItems = new List<ProductRow>();
                 string sqlStock = @"
-                    SELECT l.Lot_id, p.[Name], sc.CellCode, lp.Quantity, l.ArrivalDate, l.ShelfLifeHours
-                    FROM LotPlacement lp
-                    JOIN Lot l ON lp.Lot_id = l.Lot_id
-                    JOIN Product p ON l.product_id = p.product_id
-                    JOIN StorageCell sc ON lp.Cell_id = sc.Cell_id";
+            SELECT l.Lot_id, p.[Name], sc.CellCode, lp.Quantity, l.ArrivalDate, l.ShelfLifeHours
+            FROM LotPlacement lp
+            JOIN Lot l ON lp.Lot_id = l.Lot_id
+            JOIN Product p ON l.product_id = p.product_id
+            JOIN StorageCell sc ON lp.Cell_id = sc.Cell_id";
 
                 cmd.CommandText = sqlStock;
                 using (var r = cmd.ExecuteReader())
@@ -96,13 +100,18 @@ namespace Sklad_Kursach.Pages
                         int hours = Convert.ToInt32(r["ShelfLifeHours"]);
                         TimeSpan left = arr.AddHours(hours) - DateTime.Now;
 
+                        string daysLeftText = left.TotalSeconds <= 0
+                            ? "ПРОСРОЧЕНО"
+                            : $"{(int)left.TotalDays} дн. {left.Hours} ч.";
+
                         stockItems.Add(new ProductRow
                         {
                             LotId = Convert.ToInt32(r["Lot_id"]),
                             ProductName = r["Name"].ToString(),
                             StorageCell = r["CellCode"].ToString(),
                             TotalCount = Convert.ToInt32(r["Quantity"]),
-                            DaysLeft = left.TotalDays < 0 ? "ПРОСРОЧЕНО" : $"{left.Days} дн."
+                            DaysLeft = daysLeftText,
+                            FullInfo = $"Партия #{r["Lot_id"]}. Ячейка: {r["CellCode"]}. Прибыл: {arr:dd.MM.yyyy HH:mm}"
                         });
                     }
                 }

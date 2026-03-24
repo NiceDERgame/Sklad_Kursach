@@ -1,8 +1,10 @@
 ﻿using Sklad_Kursach.Class;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,10 +15,27 @@ namespace Sklad_Kursach.Pages
 {
     public partial class Incoming_Page : Page
     {
+        private readonly Dictionary<string, int> _categoryMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Еда", 1 },
+            { "Техника", 2 },
+            { "Химия", 3 },
+            { "Другое", 4 }
+        };
+
+        private readonly Dictionary<string, int> _supplierMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "ООО Фермер Про", 1 },
+            { "ООО \"Фермер Про\"", 1 },
+            { "АО ТехноМир", 2 },
+            { "АО \"ТехноМир\"", 2 }
+        };
+
         public Incoming_Page()
         {
             InitializeComponent();
             CategoryCb.IsEditable = true;
+            SupplierCb.IsEditable = true;
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -93,6 +112,45 @@ namespace Sklad_Kursach.Pages
                 return;
             }
 
+            if (!_categoryMap.TryGetValue(CategoryCb.Text.Trim(), out int typeId))
+            {
+                MessageBox.Show("Выберите категорию из списка: Еда, Техника, Химия или Другое.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_supplierMap.TryGetValue(SupplierCb.Text.Trim(), out int providerId))
+            {
+                MessageBox.Show("Выберите поставщика из списка.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(TotalCountTb.Text.Trim(), out int quantity) || quantity <= 0)
+            {
+                MessageBox.Show("Количество должно быть целым числом больше 0.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(PriceTb.Text.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal price))
+            {
+                if (!decimal.TryParse(PriceTb.Text.Trim(), NumberStyles.Number, new CultureInfo("ru-RU"), out price))
+                {
+                    MessageBox.Show("Цена указана в неверном формате.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            if (price <= 0)
+            {
+                MessageBox.Show("Цена должна быть больше 0.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(ShelfLifeTb.Text.Trim(), out int shelfLifeHours) || shelfLifeHours <= 0)
+            {
+                MessageBox.Show("Срок хранения должен быть целым числом больше 0.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
 
             try
@@ -101,31 +159,29 @@ namespace Sklad_Kursach.Pages
                 {
                     conn.Open();
 
-                    using (SqlCommand cmd = new SqlCommand("AddIncomingProduct", conn))
+                    using (SqlCommand cmd = new SqlCommand("dbo.AddIncomingProduct", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
                         DateTime arrivalDateTime = ReceiptDateDp.SelectedDate.Value.Date + DateTime.Now.TimeOfDay;
 
-                        cmd.Parameters.AddWithValue("@ProductName", Tovar_Name.Text.Trim());
-                        cmd.Parameters.AddWithValue("@TypeID", CategoryCb.SelectedIndex + 1);
-                        cmd.Parameters.AddWithValue("@ProviderID", SupplierCb.SelectedIndex + 1);
-                        cmd.Parameters.AddWithValue("@EmployeeID", UserData.CurrentUser.EmployeeId);
-                        cmd.Parameters.AddWithValue("@Quantity", int.Parse(TotalCountTb.Text));
-                        cmd.Parameters.AddWithValue("@Price", decimal.Parse(PriceTb.Text));
-                        cmd.Parameters.AddWithValue("@ShelfLifeHours", int.Parse(ShelfLifeTb.Text));
-                        cmd.Parameters.AddWithValue("@ArrivalDate", arrivalDateTime);
+                        cmd.Parameters.Add("@ProductName", SqlDbType.NVarChar, 100).Value = Tovar_Name.Text.Trim();
+                        cmd.Parameters.Add("@TypeID", SqlDbType.Int).Value = typeId;
+                        cmd.Parameters.Add("@ProviderID", SqlDbType.Int).Value = providerId;
+                        cmd.Parameters.Add("@EmployeeID", SqlDbType.Int).Value = UserData.CurrentUser.EmployeeId;
+                        cmd.Parameters.Add("@Quantity", SqlDbType.Int).Value = quantity;
+                        cmd.Parameters.Add("@Price", SqlDbType.Decimal).Value = price;
+                        cmd.Parameters["@Price"].Precision = 10;
+                        cmd.Parameters["@Price"].Scale = 2;
+                        cmd.Parameters.Add("@ShelfLifeHours", SqlDbType.Int).Value = shelfLifeHours;
+                        cmd.Parameters.Add("@ArrivalDate", SqlDbType.DateTime).Value = arrivalDateTime;
 
                         cmd.ExecuteNonQuery();
                     }
                 }
 
                 MessageBox.Show("Товар успешно принят!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                NavigationService.GoBack();
-            }
-            catch (FormatException)
-            {
-                MessageBox.Show("Ошибка в числах. Проверьте формат цены, количества и срока хранения.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                NavigationService?.GoBack();
             }
             catch (SqlException ex)
             {
