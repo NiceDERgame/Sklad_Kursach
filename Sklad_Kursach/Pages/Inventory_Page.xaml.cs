@@ -151,7 +151,7 @@ namespace Sklad_Kursach.Pages
                     SqlTransaction transaction = conn.BeginTransaction();
                     try
                     {
-                        // --- ШАГ 1: Удаляем связи с ОТГРУЗКОЙ (Вот чего не хватало!) ---
+                        // --- ШАГ 1: Удаляем связи с ОТГРУЗКОЙ ---
                         SqlCommand cmdDelShip = new SqlCommand("DELETE FROM ShipmentPick WHERE Lot_id = @id", conn, transaction);
                         cmdDelShip.Parameters.AddWithValue("@id", item.LotId);
                         cmdDelShip.ExecuteNonQuery();

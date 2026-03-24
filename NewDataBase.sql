@@ -162,51 +162,97 @@ CREATE TABLE dbo.ActionLog (
     FOREIGN KEY (Cell_id) REFERENCES dbo.StorageCell(Cell_id)
 );
 
--- Процедура добавления
+
+ALTER TABLE dbo.Receipt
+DROP CONSTRAINT DF__Receipt__Receipt__6477ECF3;
+
+ALTER TABLE dbo.Receipt
+ALTER COLUMN ReceiptDate DATETIME NOT NULL;
+
+ALTER TABLE dbo.Receipt
+ADD CONSTRAINT DF_Receipt_ReceiptDate
+DEFAULT (GETDATE()) FOR ReceiptDate;
+
 CREATE PROCEDURE [dbo].[AddIncomingProduct]
     @ProductName NVARCHAR(100),
-    @TypeID INT,            
-    @ProviderID INT,        
-    @EmployeeID INT,        
-    @Quantity INT,          
-    @Price DECIMAL(10,2),   
-    @ShelfLifeHours INT    
+    @TypeID INT,
+    @ProviderID INT,
+    @EmployeeID INT,
+    @Quantity INT,
+    @Price DECIMAL(10,2),
+    @ShelfLifeHours INT,
+    @ArrivalDate DATETIME
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRANSACTION;
+
     BEGIN TRY
         DECLARE @ProdID INT;
-        SELECT @ProdID = product_id FROM dbo.Product WHERE [Name] = @ProductName;
+
+        SELECT @ProdID = product_id
+        FROM dbo.Product
+        WHERE [Name] = @ProductName;
 
         IF @ProdID IS NULL
         BEGIN
-            INSERT INTO dbo.Product ([Name], Type_Tovar_id) VALUES (@ProductName, @TypeID);
+            INSERT INTO dbo.Product ([Name], Type_Tovar_id)
+            VALUES (@ProductName, @TypeID);
+
             SET @ProdID = SCOPE_IDENTITY();
         END
 
         DECLARE @ReceiptID INT;
-        INSERT INTO dbo.Receipt (ReceiptNumber, provider_id, employee_id, TotalSum)
-        VALUES ('REC-' + CAST(NEWID() AS NVARCHAR(36)), @ProviderID, @EmployeeID, (@Quantity * @Price));
+        INSERT INTO dbo.Receipt (ReceiptNumber, provider_id, employee_id, ReceiptDate, TotalSum)
+        VALUES (
+            'REC-' + CAST(NEWID() AS NVARCHAR(36)),
+            @ProviderID,
+            @EmployeeID,
+            @ArrivalDate,
+            (@Quantity * @Price)
+        );
+
         SET @ReceiptID = SCOPE_IDENTITY();
 
         DECLARE @ReceiptItemID INT;
         INSERT INTO dbo.ReceiptItem (Receipt_id, product_id, Quantity, Price, ShelfLifeHours, ArrivalDate)
-        VALUES (@ReceiptID, @ProdID, @Quantity, @Price, @ShelfLifeHours, CAST(GETDATE() AS DATE));
+        VALUES (
+            @ReceiptID,
+            @ProdID,
+            @Quantity,
+            @Price,
+            @ShelfLifeHours,
+            @ArrivalDate
+        );
+
         SET @ReceiptItemID = SCOPE_IDENTITY();
 
         DECLARE @LotID INT;
         INSERT INTO dbo.Lot (ReceiptItem_id, product_id, ArrivalDate, ShelfLifeHours, TotalQuantity)
-        VALUES (@ReceiptItemID, @ProdID, CAST(GETDATE() AS DATE), @ShelfLifeHours, @Quantity);
+        VALUES (
+            @ReceiptItemID,
+            @ProdID,
+            @ArrivalDate,
+            @ShelfLifeHours,
+            @Quantity
+        );
+
         SET @LotID = SCOPE_IDENTITY();
 
         INSERT INTO dbo.ActionLog (ActionTime, Employee_id, ActionType, product_id, Lot_id, Details)
-        VALUES (GETDATE(), @EmployeeID, N'INCOMING', @ProdID, @LotID, N'Принят новый товар: ' + @ProductName);
+        VALUES (
+            GETDATE(),
+            @EmployeeID,
+            N'INCOMING',
+            @ProdID,
+            @LotID,
+            N'Принят новый товар: ' + @ProductName
+        );
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
-        THROW; 
+        THROW;
     END CATCH
 END

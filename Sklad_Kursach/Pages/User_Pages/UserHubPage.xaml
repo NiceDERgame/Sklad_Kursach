@@ -220,19 +220,6 @@
                         </StackPanel>
                     </Button>
 
-                    <Button Margin="10"
-                            Height="138"
-                            Style="{StaticResource BtnStyle}"
-                            Click="GoOutgoing">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="📤" FontSize="34" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Отгрузка"
-                                       Margin="0,12,0,0"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
                 </UniformGrid>
 
             </StackPanel>

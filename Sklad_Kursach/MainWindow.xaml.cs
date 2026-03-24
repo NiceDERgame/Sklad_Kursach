@@ -8,7 +8,6 @@ namespace Sklad_Kursach
         public MainWindow()
         {
             InitializeComponent();
-            // При запуске открываем страницу авторизации
             MainFrame.Navigate(new Auth_Page());
         }
     }
