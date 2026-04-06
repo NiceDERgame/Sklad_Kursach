@@ -1,242 +1,206 @@
 ﻿using Sklad_Kursach.Class;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
 using System.Data.SqlClient;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
-using System.Windows.Navigation;
 
 namespace Sklad_Kursach.Pages
 {
     public partial class Sort_Page : Page
     {
-        private int _lotId;
-        private string _prodName;
-        private string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+        private readonly int _lotId;
+        private readonly string _productName;
 
-        // Конструктор по умолчанию (чтобы не было ошибок в XAML)
-        public Sort_Page() : this(0, "") { }
-
-        // Конструктор, который принимает данные о товаре
-        public Sort_Page(int lotId, string prodName)
+        public Sort_Page(int lotId, string productName)
         {
             InitializeComponent();
             _lotId = lotId;
-            _prodName = prodName;
-
-            if (_lotId > 0)
-                ProductTitle.Text = $"Куда положить товар: {_prodName}?";
+            _productName = productName;
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadZonesAndCells();
+            try
+            {
+                if (!UserData.EnsureAuthorized(this))
+                    return;
+
+                if (_lotId <= 0)
+                {
+                    MessageBox.Show(
+                        "Неверный идентификатор партии.",
+                        "Ошибка",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                ProductTitle.Text = _productName;
+                LoadZonesAndCells();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка загрузки страницы сортировки:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
-        // 1. ГЕНЕРАЦИЯ КНОПОК (ИНТЕРФЕЙС)
         private void LoadZonesAndCells()
         {
-            ZonesContainer.Children.Clear(); // Очищаем контейнер перед загрузкой
+            ZonesContainer.Children.Clear();
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
             {
                 conn.Open();
 
-                // Используем List, чтобы сохранить данные и закрыть DataReader, 
-                // иначе нельзя будет делать вложенные запросы для ячеек.
-                var zones = new List<Tuple<int, string>>();
-                SqlCommand cmdZones = new SqlCommand("SELECT Zona_id, Name_Zona FROM Zona", conn);
+                string query = @"
+                    SELECT 
+                        sc.Cell_id,
+                        z.ZoneName,
+                        sc.CellCode
+                    FROM StorageCell sc
+                    JOIN Zona z ON sc.Zona_id = z.Zona_id
+                    WHERE sc.Cell_id NOT IN (SELECT Cell_id FROM LotPlacement)
+                    ORDER BY z.ZoneName, sc.CellCode";
 
-                using (var reader = cmdZones.ExecuteReader())
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        zones.Add(new Tuple<int, string>(reader.GetInt32(0), reader.GetString(1)));
+                        int cellId = Convert.ToInt32(reader["Cell_id"]);
+                        string zoneName = reader["ZoneName"].ToString();
+                        string cellCode = reader["CellCode"].ToString();
+
+                        Button cellButton = new Button
+                        {
+                            Content = zoneName + " / " + cellCode,
+                            Tag = cellId,
+                            Margin = new Thickness(5),
+                            Padding = new Thickness(10),
+                            Background = Brushes.White
+                        };
+
+                        cellButton.Click += CellButton_Click;
+                        ZonesContainer.Children.Add(cellButton);
                     }
-                }
-
-                // Шаг 2: Для каждой зоны рисуем карточку и загружаем ячейки
-                foreach (var zone in zones)
-                {
-                    int zoneId = zone.Item1;
-                    string zoneName = zone.Item2;
-
-                    Border card = new Border
-                    {
-                        Background = Brushes.White,
-                        CornerRadius = new CornerRadius(10),
-                        Padding = new Thickness(20),
-                        Margin = new Thickness(0, 0, 0, 20),
-                        BorderBrush = (SolidColorBrush)new BrushConverter().ConvertFrom("#E0E0E0"),
-                        BorderThickness = new Thickness(1)
-                    };
-                    card.Effect = new DropShadowEffect { BlurRadius = 15, Opacity = 0.1, ShadowDepth = 2, Color = Colors.Black };
-
-                    StackPanel stack = new StackPanel();
-
-                    // Заголовок зоны (например "Зона А (Еда)")
-                    TextBlock header = new TextBlock
-                    {
-                        Text = zoneName,
-                        FontSize = 18,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#1565C0"),
-                        Margin = new Thickness(0, 0, 0, 15)
-                    };
-
-                    // Панель для кнопок (WrapPanel чтобы кнопки переносились на новую строку)
-                    WrapPanel buttonsPanel = new WrapPanel { Orientation = Orientation.Horizontal };
-
-                    // Собираем всё вместе
-                    stack.Children.Add(header);
-                    stack.Children.Add(buttonsPanel);
-                    card.Child = stack;
-
-                    // Загружаем кнопки ячеек внутрь buttonsPanel
-                    LoadCellsForZone(conn, zoneId, buttonsPanel);
-
-                    // Добавляем готовую карточку на экран
-                    ZonesContainer.Children.Add(card);
                 }
             }
         }
 
-        private void LoadCellsForZone(SqlConnection conn, int zoneId, WrapPanel panel)
+        private void CellButton_Click(object sender, RoutedEventArgs e)
         {
-            SqlCommand cmdCells = new SqlCommand("SELECT CellCode FROM StorageCell WHERE Zona_id = @zid", conn);
-            cmdCells.Parameters.AddWithValue("@zid", zoneId);
-
-            using (var r = cmdCells.ExecuteReader())
+            try
             {
-                bool hasCells = false;
-                while (r.Read())
+                if (!UserData.EnsureAuthorized(this))
+                    return;
+
+                Button selectedButton = sender as Button;
+                if (selectedButton == null || selectedButton.Tag == null)
                 {
-                    hasCells = true;
-                    string code = r["CellCode"].ToString(); // Например "A-01"
-
-                    // Создаем кнопку
-                    Button btn = new Button
-                    {
-                        Content = code,
-                        Width = 90,
-                        Height = 45,
-                        Margin = new Thickness(5),
-                        Background = Brushes.Transparent,
-                        BorderBrush = (SolidColorBrush)new BrushConverter().ConvertFrom("#B0BEC5"),
-                        BorderThickness = new Thickness(1),
-                        FontSize = 14,
-                        FontWeight = FontWeights.SemiBold,
-                        Cursor = System.Windows.Input.Cursors.Hand
-                    };
-
-                    // Привязываем событие нажатия
-                    btn.Click += Cell_Click;
-
-                    panel.Children.Add(btn);
+                    MessageBox.Show(
+                        "Не удалось определить выбранную ячейку.",
+                        "Ошибка",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
                 }
 
-                if (!hasCells)
+                int cellId = Convert.ToInt32(selectedButton.Tag);
+
+                using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
                 {
-                    panel.Children.Add(new TextBlock { Text = "Нет ячеек", Foreground = Brushes.Gray, FontStyle = FontStyles.Italic });
-                }
-            }
-        }
+                    conn.Open();
+                    SqlTransaction transaction = conn.BeginTransaction();
 
-        // 2. ЛОГИКА СОХРАНЕНИЯ (ТРАНЗАКЦИЯ)
-
-        private void Cell_Click(object sender, RoutedEventArgs e)
-        {
-            if (_lotId == 0)
-            {
-                MessageBox.Show("Ошибка: Товар не выбран! Вернитесь на склад.");
-                return;
-            }
-
-            var btn = sender as Button;
-            string cellCode = btn.Content.ToString(); // Получаем точный код (A-01)
-
-            SaveSorting(cellCode);
-        }
-
-        private void SaveSorting(string cellCode)
-        {
-            using (SqlConnection conn = new SqlConnection(connStr))
-            {
-                conn.Open();
-                // Начинаем транзакцию: Всё или ничего
-                SqlTransaction transaction = conn.BeginTransaction();
-
-                try
-                {
-                    // 1. Ищем ID ячейки по коду
-                    SqlCommand cmdCell = new SqlCommand("SELECT Cell_id FROM StorageCell WHERE CellCode = @code", conn, transaction);
-                    cmdCell.Parameters.AddWithValue("@code", cellCode);
-                    object res = cmdCell.ExecuteScalar();
-
-                    if (res == null)
+                    try
                     {
-                        transaction.Rollback();
-                        MessageBox.Show($"Ошибка: Ячейка '{cellCode}' не найдена в базе данных!");
-                        return;
+                        SqlCommand qtyCmd = new SqlCommand(
+                            "SELECT TotalQuantity FROM Lot WHERE Lot_id = @Lot_id",
+                            conn, transaction);
+                        qtyCmd.Parameters.AddWithValue("@Lot_id", _lotId);
+
+                        object qtyObj = qtyCmd.ExecuteScalar();
+                        if (qtyObj == null || qtyObj == DBNull.Value)
+                            throw new Exception("Партия товара не найдена.");
+
+                        int quantity = Convert.ToInt32(qtyObj);
+
+                        SqlCommand insertPlacementCmd = new SqlCommand(@"
+                            INSERT INTO LotPlacement (Lot_id, Cell_id, Quantity, PlacedByEmployee_id, PlacedAt)
+                            VALUES (@Lot_id, @Cell_id, @Quantity, @Employee_id, GETDATE())",
+                            conn, transaction);
+
+                        insertPlacementCmd.Parameters.AddWithValue("@Lot_id", _lotId);
+                        insertPlacementCmd.Parameters.AddWithValue("@Cell_id", cellId);
+                        insertPlacementCmd.Parameters.AddWithValue("@Quantity", quantity);
+                        insertPlacementCmd.Parameters.AddWithValue("@Employee_id", UserData.CurrentUser.EmployeeId);
+                        insertPlacementCmd.ExecuteNonQuery();
+
+                        SqlCommand logCmd = new SqlCommand(@"
+                            INSERT INTO ActionLog (ActionTime, Employee_id, ActionType, Lot_id, Details)
+                            VALUES (GETDATE(), @Employee_id, 'SORT', @Lot_id, @Details)",
+                            conn, transaction);
+
+                        logCmd.Parameters.AddWithValue("@Employee_id", UserData.CurrentUser.EmployeeId);
+                        logCmd.Parameters.AddWithValue("@Lot_id", _lotId);
+                        logCmd.Parameters.AddWithValue("@Details", $"Товар '{_productName}' размещён в ячейку.");
+                        logCmd.ExecuteNonQuery();
+
+                        transaction.Commit();
                     }
-                    int cellId = (int)res;
-
-                    // 2. Перемещаем товар (Копируем из Lot в LotPlacement)
-                    // Используем IF NOT EXISTS для защиты от дублей
-                    string sqlPlace = @"
-                        INSERT INTO LotPlacement (Lot_id, Cell_id, Quantity, PlacedByEmployee_id)
-                        SELECT Lot_id, @cellId, TotalQuantity, @empId
-                        FROM Lot 
-                        WHERE Lot_id = @lotId";
-
-                    SqlCommand cmdPlace = new SqlCommand(sqlPlace, conn, transaction);
-                    cmdPlace.Parameters.AddWithValue("@cellId", cellId);
-                    cmdPlace.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
-                    cmdPlace.Parameters.AddWithValue("@lotId", _lotId);
-
-                    int rows = cmdPlace.ExecuteNonQuery();
-
-                    if (rows == 0)
+                    catch
                     {
-                        transaction.Rollback();
-                        MessageBox.Show("Ошибка: Не удалось переместить товар. Возможно, он уже был распределен.");
-                        return;
+                        try { transaction.Rollback(); } catch { }
+                        throw;
                     }
-
-                    // 3. Пишем ЛОГ
-                    string sqlLog = @"INSERT INTO ActionLog (Employee_id, ActionType, Lot_id, Cell_id, Details)
-                                      VALUES (@empId, 'SORT', @lotId, @cellId, N'Товар ' + @pName + ' размещен в ячейку ' + @code)";
-
-                    SqlCommand cmdLog = new SqlCommand(sqlLog, conn, transaction);
-                    cmdLog.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
-                    cmdLog.Parameters.AddWithValue("@lotId", _lotId);
-                    cmdLog.Parameters.AddWithValue("@cellId", cellId);
-                    cmdLog.Parameters.AddWithValue("@pName", _prodName);
-                    cmdLog.Parameters.AddWithValue("@code", cellCode);
-                    cmdLog.ExecuteNonQuery();
-
-                    // Все прошло успешно -> Сохраняем
-                    transaction.Commit();
-
-                    MessageBox.Show($"Успех! Товар '{_prodName}' перемещен в ячейку {cellCode}.");
-
-                    // Возвращаемся на склад
-                    NavigationService.Navigate(new Inventory_Page());
                 }
-                catch (Exception ex)
-                {
-                    transaction.Rollback(); // Отменяем изменения при ошибке
-                    MessageBox.Show("Ошибка базы данных: " + ex.Message);
-                }
+
+                MessageBox.Show(
+                    "Товар успешно размещён на складе.",
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                NavigationService?.Navigate(new Inventory_Page());
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(
+                    "Ошибка базы данных при размещении товара:\n" + ex.Message,
+                    "SQL ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка при размещении товара:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            if (NavigationService.CanGoBack) NavigationService.GoBack();
+            try
+            {
+                if (NavigationService?.CanGoBack == true)
+                    NavigationService.GoBack();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка возврата назад:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
     }
 }

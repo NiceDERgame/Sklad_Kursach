@@ -1,93 +1,98 @@
 ﻿using Sklad_Kursach.Class;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Sklad_Kursach.Pages
 {
-    /// <summary>
-    /// Логика взаимодействия для Auth_Page.xaml
-    /// </summary>
-
     public partial class Auth_Page : Page
     {
         public Auth_Page()
         {
             InitializeComponent();
-
         }
+
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            UserData userFinder = new UserData();
-            userFinder.GetUser(UsernameTB.Text, PasswordBoxe.Password);
-
-            if (UserData.CurrentUser != null)
+            try
             {
-                // Получаем роль и сразу делаем её маленькими буквами для надежности
-                string role = UserData.CurrentUser.Role.ToLower();
+                if (string.IsNullOrWhiteSpace(UsernameTB.Text) || string.IsNullOrWhiteSpace(PasswordBoxe.Password))
+                {
+                    MessageBox.Show(
+                        "Введите логин и пароль.",
+                        "Предупреждение",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
 
-                // Проверяем (все названия пишем маленькими буквами)
+                UserData userFinder = new UserData();
+                userFinder.GetUser(UsernameTB.Text.Trim(), PasswordBoxe.Password);
+
+                if (UserData.CurrentUser == null)
+                {
+                    MessageBox.Show(
+                        "Неверный логин или пароль. Пожалуйста, попробуйте снова.",
+                        "Ошибка",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                string role = (UserData.CurrentUser.Role ?? string.Empty).ToLowerInvariant();
+
                 if (role == "рабочий")
                 {
-                    NavigationService.Navigate(new UserHubPage());
+                    NavigationService?.Navigate(new UserHubPage());
                 }
-                // "старший рабочий" или "администратор"
                 else if (role == "старший рабочий" || role == "администратор")
                 {
-                    NavigationService.Navigate(new AdminHubPage());
+                    NavigationService?.Navigate(new AdminHubPage());
                 }
                 else
                 {
-                    MessageBox.Show($"Роль '{UserData.CurrentUser.Role}' не распознана системой!",
-                        "Ошибка доступа", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(
+                        $"Роль '{UserData.CurrentUser.Role}' не распознана системой!",
+                        "Ошибка доступа",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 }
             }
-            else
+            catch (SqlException ex)
             {
-                MessageBox.Show("Неверный логин или пароль. Пожалуйста, попробуйте снова.",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    "Ошибка подключения к базе данных:\n" + ex.Message,
+                    "SQL ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Не удалось выполнить вход:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
-        private void ShowPassword_PreviewMouseDown(object sender, MouseButtonEventArgs e) // показ пароля
+        private void ShowPassword_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-
             TextBoxe.Text = PasswordBoxe.Password;
-
             TextBoxe.Visibility = Visibility.Visible;
             PasswordBoxe.Visibility = Visibility.Collapsed;
-
             TextBoxe.Focus();
-
             e.Handled = true;
         }
 
-        private void HidePassword_PreviewMouseUp(object sender, MouseButtonEventArgs e) //снова прячем пароль
+        private void HidePassword_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
-
             PasswordBoxe.Password = TextBoxe.Text;
-
-
             TextBoxe.Visibility = Visibility.Collapsed;
             PasswordBoxe.Visibility = Visibility.Visible;
-
             PasswordBoxe.Focus();
-
             e.Handled = true;
         }
     }

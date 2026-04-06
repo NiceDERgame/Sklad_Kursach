@@ -1,6 +1,6 @@
 ﻿using Microsoft.Win32;
 using Sklad_Kursach.Class;
-using System.Configuration;
+using System;
 using System.Data.SqlClient;
 using System.IO;
 using System.Windows;
@@ -10,75 +10,138 @@ namespace Sklad_Kursach.Pages
 {
     public partial class Profile_Page : Page
     {
-        string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
-
         public Profile_Page()
         {
             InitializeComponent();
-            UserName.Text = UserData.CurrentUser.FirstName + " " + UserData.CurrentUser.LastName;
-            PostTb.Text = UserData.CurrentUser.Role;
-            LoginTb.Text = UserData.CurrentUser.Login;
-            LastVhod.Text = System.DateTime.Now.ToString();
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            UpdateLastLogin();
-            LoadUserPhoto();
-        }
-
-        private void UpdateLastLogin()
-        {
-            using (SqlConnection conn = new SqlConnection(connStr))
+            try
             {
-                conn.Open();
-                string query = "UPDATE Data_for_authorization SET LastVhod = @time WHERE Auth_id = @id";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@id", UserData.CurrentUser.AuthId);
-                cmd.Parameters.AddWithValue("@time", System.DateTime.Now);
-                cmd.ExecuteNonQuery();
-            }
-        }
+                if (!UserData.EnsureAuthorized(this))
+                    return;
 
-        private void LoadUserPhoto()
-        {
-            // Используем наш универсальный метод. Для Ellipse передаем 4-й параметр
-            UserData.LoadAvatar(UserData.CurrentUser.AuthId, null, AvatarEmoji, UserAvatar);
+                UserName.Text = $"{UserData.CurrentUser.LastName} {UserData.CurrentUser.FirstName}";
+                PostTb.Text = UserData.CurrentUser.Role;
+                LoginTb.Text = UserData.CurrentUser.Login;
+                LastVhod.Text = UserData.CurrentUser.LastLogin;
+
+                UserData.LoadAvatar(UserData.CurrentUser.AuthId, null, AvatarEmoji, UserAvatar);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка загрузки профиля:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void ChangePhoto_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog op = new OpenFileDialog
+            try
             {
-                Title = "Выберите фото",
-                Filter = "Картинки|*.jpg;*.jpeg;*.png"
-            };
+                if (!UserData.EnsureAuthorized(this))
+                    return;
 
-            if (op.ShowDialog() == true)
-            {
+                OpenFileDialog op = new OpenFileDialog
+                {
+                    Title = "Выберите фото",
+                    Filter = "Картинки|*.jpg;*.jpeg;*.png"
+                };
+
+                if (op.ShowDialog() != true)
+                    return;
+
+                if (!File.Exists(op.FileName))
+                {
+                    MessageBox.Show(
+                        "Файл не найден.",
+                        "Ошибка",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                FileInfo fi = new FileInfo(op.FileName);
+                if (fi.Length > 5 * 1024 * 1024)
+                {
+                    MessageBox.Show(
+                        "Файл слишком большой. Выберите изображение до 5 МБ.",
+                        "Ошибка",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
                 byte[] imageBytes = File.ReadAllBytes(op.FileName);
-                SavePhotoToDB(imageBytes);
-                // Сразу обновляем вид на странице
-                LoadUserPhoto();
-            }
-        }
 
-        private void SavePhotoToDB(byte[] photo)
-        {
-            using (SqlConnection conn = new SqlConnection(connStr))
+                using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
+                {
+                    conn.Open();
+
+                    SqlCommand cmd = new SqlCommand(
+                        "UPDATE Employee SET Photo = @photo WHERE Auth_id = @id",
+                        conn);
+
+                    cmd.Parameters.AddWithValue("@photo", imageBytes);
+                    cmd.Parameters.AddWithValue("@id", UserData.CurrentUser.AuthId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                UserData.LoadAvatar(UserData.CurrentUser.AuthId, null, AvatarEmoji, UserAvatar);
+
+                MessageBox.Show(
+                    "Фото успешно обновлено.",
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (IOException ex)
             {
-                conn.Open();
-                string sql = "UPDATE Employee SET Photo = @photo WHERE Auth_id = @id";
-                SqlCommand cmd = new SqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@photo", photo);
-                cmd.Parameters.AddWithValue("@id", UserData.CurrentUser.AuthId);
-                cmd.ExecuteNonQuery();
+                MessageBox.Show(
+                    "Ошибка чтения файла:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(
+                    "Ошибка сохранения фото в БД:\n" + ex.Message,
+                    "SQL ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Не удалось обновить фото:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
         private void GoBack(object sender, RoutedEventArgs e)
         {
-            NavigationService.GoBack();
+            try
+            {
+                if (NavigationService?.CanGoBack == true)
+                    NavigationService.GoBack();
+                else
+                    NavigationService?.Navigate(new Auth_Page());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка возврата назад:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
     }
 }

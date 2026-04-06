@@ -1,9 +1,8 @@
 ﻿using Sklad_Kursach.Class;
-using System.Configuration;
+using System;
 using System.Data.SqlClient;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Navigation;
 
 namespace Sklad_Kursach.Pages
 {
@@ -16,22 +15,34 @@ namespace Sklad_Kursach.Pages
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            WelcomeTb.Text = $"С возвращением, {UserData.CurrentUser.FirstName}";
-            LoadUserStats();
+            try
+            {
+                if (!UserData.EnsureAuthorized(this))
+                    return;
 
-            UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
+                WelcomeTb.Text = $"С возвращением, {UserData.CurrentUser.FirstName}";
+                LoadUserStats();
+                UserData.LoadAvatar(UserData.CurrentUser.AuthId, AvatarBorder, AvatarEmoji);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка загрузки страницы:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void LoadUserStats()
         {
-            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
             {
                 conn.Open();
 
                 string sqlNew = "SELECT COUNT(*) FROM Lot WHERE Lot_id NOT IN (SELECT Lot_id FROM LotPlacement)";
                 SqlCommand cmdNew = new SqlCommand(sqlNew, conn);
-                TotalNewItemsTb.Text = cmdNew.ExecuteScalar().ToString();
+                TotalNewItemsTb.Text = Convert.ToString(cmdNew.ExecuteScalar());
 
                 string sqlIncoming = @"
                     SELECT COUNT(*) FROM ActionLog 
@@ -40,7 +51,7 @@ namespace Sklad_Kursach.Pages
                     AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
                 SqlCommand cmdInc = new SqlCommand(sqlIncoming, conn);
                 cmdInc.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
-                MyIncomingStats.Text = cmdInc.ExecuteScalar().ToString();
+                MyIncomingStats.Text = Convert.ToString(cmdInc.ExecuteScalar());
 
                 string sqlSort = @"
                     SELECT COUNT(*) FROM ActionLog 
@@ -49,7 +60,7 @@ namespace Sklad_Kursach.Pages
                     AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
                 SqlCommand cmdSort = new SqlCommand(sqlSort, conn);
                 cmdSort.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
-                MySortStats.Text = cmdSort.ExecuteScalar().ToString();
+                MySortStats.Text = Convert.ToString(cmdSort.ExecuteScalar());
 
                 string sqlShip = @"
                     SELECT COUNT(*) FROM ActionLog 
@@ -58,7 +69,7 @@ namespace Sklad_Kursach.Pages
                     AND CAST(ActionTime AS DATE) = CAST(GETDATE() AS DATE)";
                 SqlCommand cmdShip = new SqlCommand(sqlShip, conn);
                 cmdShip.Parameters.AddWithValue("@empId", UserData.CurrentUser.EmployeeId);
-                MyShipmentStats.Text = cmdShip.ExecuteScalar().ToString();
+                MyShipmentStats.Text = Convert.ToString(cmdShip.ExecuteScalar());
 
                 string sqlUrgent = @"
                     SELECT COUNT(*) 
@@ -66,15 +77,38 @@ namespace Sklad_Kursach.Pages
                     LEFT JOIN LotPlacement lp ON l.Lot_id = lp.Lot_id
                     WHERE DATEADD(hour, l.ShelfLifeHours, CAST(l.ArrivalDate AS DATETIME)) < DATEADD(day, 3, GETDATE())";
                 SqlCommand cmdUrgent = new SqlCommand(sqlUrgent, conn);
-                UrgentItemsTb.Text = cmdUrgent.ExecuteScalar().ToString();
+                UrgentItemsTb.Text = Convert.ToString(cmdUrgent.ExecuteScalar());
             }
         }
 
-        private void GoProfile(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Profile_Page());
-        private void GoInventory(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Inventory_Page());
-        private void GoIncoming(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Incoming_Page());
-        private void GoOutgoing(object sender, RoutedEventArgs e) { }
-        private void GoUsers(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Users_Page());
-        private void Logout_Click(object sender, RoutedEventArgs e) => NavigationService.Navigate(new Auth_Page());
+        private void GoProfile(object sender, RoutedEventArgs e)
+        {
+            NavigationService?.Navigate(new Profile_Page());
+        }
+
+        private void GoInventory(object sender, RoutedEventArgs e)
+        {
+            NavigationService?.Navigate(new Inventory_Page());
+        }
+
+        private void GoIncoming(object sender, RoutedEventArgs e)
+        {
+            NavigationService?.Navigate(new Incoming_Page());
+        }
+
+        private void GoOutgoing(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void GoUsers(object sender, RoutedEventArgs e)
+        {
+            NavigationService?.Navigate(new Users_Page());
+        }
+
+        private void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            UserData.CurrentUser = null;
+            NavigationService?.Navigate(new Auth_Page());
+        }
     }
 }

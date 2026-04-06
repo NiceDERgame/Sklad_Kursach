@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace Sklad_Kursach.Class
@@ -23,11 +24,47 @@ namespace Sklad_Kursach.Class
         public string Login { get; set; }
         public string Password { get; set; }
 
-        private string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
+        public static string GetConnectionString()
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"]?.ConnectionString;
+
+            if (string.IsNullOrWhiteSpace(connStr))
+                throw new ConfigurationErrorsException("Строка подключения Warehouse_DB_V3 не найдена в App.config.");
+
+            return connStr;
+        }
+
+        public static bool EnsureAuthorized(Page page)
+        {
+            if (CurrentUser != null)
+                return true;
+
+            MessageBox.Show(
+                "Сессия пользователя не найдена. Выполните вход заново.",
+                "Ошибка авторизации",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            try
+            {
+                page?.NavigationService?.Navigate(new Sklad_Kursach.Pages.Auth_Page());
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
 
         public UserData GetUser(string login, string password)
         {
             CurrentUser = null;
+
+            if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
+                return null;
+
+            string connStr = GetConnectionString();
+
             using (SqlConnection conn = new SqlConnection(connStr))
             {
                 string query = @"
@@ -43,7 +80,7 @@ namespace Sklad_Kursach.Class
                     WHERE A.Login = @login AND A.Password = @pass";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@login", login);
+                cmd.Parameters.AddWithValue("@login", login.Trim());
                 cmd.Parameters.AddWithValue("@pass", password);
 
                 conn.Open();
@@ -55,70 +92,84 @@ namespace Sklad_Kursach.Class
                         {
                             AuthId = Convert.ToInt32(reader["Auth_id"]),
                             EmployeeId = Convert.ToInt32(reader["Employee_id"]),
-                            Login = reader["Login"].ToString(),
-                            Password = reader["Password"].ToString(),
+                            Login = reader["Login"]?.ToString(),
+                            Password = reader["Password"]?.ToString(),
                             LastLogin = reader["LastVhod"] != DBNull.Value ? reader["LastVhod"].ToString() : "Не входил",
-                            FirstName = reader["First_name"].ToString(),
-                            LastName = reader["Last_name"].ToString(),
-                            Role = reader["Post_Name"].ToString()
+                            FirstName = reader["First_name"]?.ToString(),
+                            LastName = reader["Last_name"]?.ToString(),
+                            Role = reader["Post_Name"]?.ToString()
                         };
                     }
-                    return CurrentUser;
                 }
             }
+
+            return CurrentUser;
         }
 
-        // Универсальный метод загрузки аватарки
         public static void LoadAvatar(int authId, Border borderContainer, TextBlock emojiBlock, Shape shapeContainer = null)
         {
-            string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"].ConnectionString;
             byte[] photoBytes = null;
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            try
             {
-                conn.Open();
-                SqlCommand cmd = new SqlCommand("SELECT Photo FROM Employee WHERE Auth_id = @id", conn);
-                cmd.Parameters.AddWithValue("@id", authId);
-                object result = cmd.ExecuteScalar();
+                string connStr = GetConnectionString();
 
-                if (result != null && result != DBNull.Value)
+                using (SqlConnection conn = new SqlConnection(connStr))
                 {
-                    photoBytes = (byte[])result;
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT Photo FROM Employee WHERE Auth_id = @id", conn);
+                    cmd.Parameters.AddWithValue("@id", authId);
+                    object result = cmd.ExecuteScalar();
+
+                    if (result != null && result != DBNull.Value)
+                        photoBytes = (byte[])result;
+                }
+
+                if (photoBytes != null && photoBytes.Length > 0)
+                {
+                    using (var ms = new MemoryStream(photoBytes))
+                    {
+                        BitmapImage image = new BitmapImage();
+                        image.BeginInit();
+                        image.CacheOption = BitmapCacheOption.OnLoad;
+                        image.StreamSource = ms;
+                        image.EndInit();
+                        image.Freeze();
+
+                        ImageBrush brush = new ImageBrush
+                        {
+                            ImageSource = image,
+                            Stretch = Stretch.UniformToFill
+                        };
+
+                        if (emojiBlock != null)
+                            emojiBlock.Visibility = Visibility.Collapsed;
+
+                        if (borderContainer != null)
+                            borderContainer.Background = brush;
+
+                        if (shapeContainer != null)
+                            shapeContainer.Fill = brush;
+
+                        return;
+                    }
                 }
             }
-
-            if (photoBytes != null && photoBytes.Length > 0)
+            catch
             {
-                // Если фото есть
-                using (var ms = new MemoryStream(photoBytes))
-                {
-                    var image = new BitmapImage();
-                    image.BeginInit();
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.StreamSource = ms;
-                    image.EndInit();
-
-                    ImageBrush brush = new ImageBrush { ImageSource = image, Stretch = Stretch.UniformToFill };
-
-                    // Скрываем смайлик
-                    if (emojiBlock != null) emojiBlock.Visibility = Visibility.Collapsed;
-
-                    // Устанавливаем фон
-                    if (borderContainer != null) borderContainer.Background = brush;
-                    if (shapeContainer != null) shapeContainer.Fill = brush;
-                }
             }
-            else
-            {
-                // Если фото нет - возвращаем дефолт
-                if (emojiBlock != null) emojiBlock.Visibility = Visibility.Visible;
 
-                var defaultBrush = (SolidColorBrush)new BrushConverter().ConvertFrom("#1565C0"); // Синий
-                var lightBrush = new SolidColorBrush(Color.FromRgb(227, 242, 253)); // Светло-голубой (#E3F2FD)
+            if (emojiBlock != null)
+                emojiBlock.Visibility = Visibility.Visible;
 
-                if (borderContainer != null) borderContainer.Background = defaultBrush;
-                if (shapeContainer != null) shapeContainer.Fill = lightBrush;
-            }
+            SolidColorBrush defaultBrush = (SolidColorBrush)new BrushConverter().ConvertFrom("#1565C0");
+            SolidColorBrush lightBrush = new SolidColorBrush(Color.FromRgb(227, 242, 253));
+
+            if (borderContainer != null)
+                borderContainer.Background = defaultBrush;
+
+            if (shapeContainer != null)
+                shapeContainer.Fill = lightBrush;
         }
     }
 }
