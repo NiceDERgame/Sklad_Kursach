@@ -38,13 +38,22 @@
             <Style x:Key="ComboPretty" TargetType="ComboBox">
                 <Setter Property="FontFamily" Value="Segoe UI"/>
                 <Setter Property="FontSize" Value="14"/>
-                <Setter Property="IsEditable" Value="True"/>
+                <Setter Property="IsEditable" Value="False"/>
                 <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
                 <Setter Property="Height" Value="40"/>
                 <Setter Property="Background" Value="White"/>
                 <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Padding" Value="10,6"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ComboBox">
@@ -55,15 +64,14 @@
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"/>
 
-                                <TextBox x:Name="PART_EditableTextBox"
-                                         Margin="12,0,36,0"
-                                         BorderThickness="0"
-                                         Background="Transparent"
-                                         VerticalContentAlignment="Center"
-                                         HorizontalAlignment="Left"
-                                         FontFamily="{TemplateBinding FontFamily}"
-                                         FontSize="{TemplateBinding FontSize}"
-                                         Foreground="{TemplateBinding Foreground}"/>
+                                <ContentPresenter x:Name="ContentSite"
+                                                  IsHitTestVisible="False"
+                                                  Margin="12,0,36,0"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
 
                                 <ToggleButton Focusable="False"
                                               IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
@@ -88,7 +96,8 @@
                                             BorderBrush="{StaticResource BrushBorder}"
                                             BorderThickness="1"
                                             CornerRadius="6"
-                                            Padding="4">
+                                            Padding="4"
+                                            MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
                                         <ScrollViewer CanContentScroll="True" MaxHeight="260">
                                             <ItemsPresenter/>
                                         </ScrollViewer>
@@ -229,7 +238,12 @@
                     <TextBox x:Name="Tovar_Name" Style="{StaticResource TextPretty}"/>
 
                     <TextBlock Text="Категория" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
-                    <ComboBox x:Name="CategoryCb" Style="{StaticResource ComboPretty}" IsEditable="True"/>
+                    <ComboBox x:Name="CategoryCb" Style="{StaticResource ComboPretty}" SelectedIndex="-1">
+                        <ComboBoxItem Content="Еда"/>
+                        <ComboBoxItem Content="Техника"/>
+                        <ComboBoxItem Content="Химия"/>
+                        <ComboBoxItem Content="Другое"/>
+                    </ComboBox>
 
                     <TextBlock Text="Дата прибытия" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
                     <DatePicker x:Name="ReceiptDateDp" Style="{StaticResource DatePretty}"/>
@@ -266,7 +280,10 @@
                     </Grid>
 
                     <TextBlock Text="Поставщик" Style="{StaticResource SectionTitleStyle}" Margin="0,14,0,0"/>
-                    <ComboBox x:Name="SupplierCb" Style="{StaticResource ComboPretty}"/>
+                    <ComboBox x:Name="SupplierCb" Style="{StaticResource ComboPretty}" SelectedIndex="-1">
+                        <ComboBoxItem Content="ООО Фермер Про"/>
+                        <ComboBoxItem Content="АО ТехноМир"/>
+                    </ComboBox>
 
                     <Button Content="ПРИНЯТЬ И ДОБАВИТЬ В «НОВЫЙ ТОВАР»"
                             Margin="0,24,0,0"

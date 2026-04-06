@@ -16,7 +16,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Верхняя панель -->
         <Grid Grid.Row="0" Margin="24,16,24,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -81,7 +80,6 @@
             </Button>
         </Grid>
 
-        <!-- Заголовок -->
         <Border Grid.Row="1"
                 Margin="24,0,24,16"
                 Padding="0,6,0,20"
@@ -95,7 +93,6 @@
             </StackPanel>
         </Border>
 
-        <!-- Основной контент -->
         <ScrollViewer Grid.Row="2"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
@@ -103,7 +100,6 @@
 
             <StackPanel HorizontalAlignment="Center" MaxWidth="1220">
 
-                <!-- Карточки статистики -->
                 <UniformGrid Columns="3" Margin="0,0,0,28">
                     <Border Margin="10" Padding="24" Background="White" CornerRadius="14">
                         <StackPanel>
@@ -119,7 +115,7 @@
 
                     <Border Margin="10" Padding="24" Background="White" CornerRadius="14">
                         <StackPanel>
-                            <TextBlock Text="Принято сегодня" Foreground="#78909C" FontSize="15"/>
+                            <TextBlock Text="Принято сегодня (мной)" Foreground="#78909C" FontSize="15"/>
                             <TextBlock x:Name="NewItemsTb"
                                        Text="0"
                                        Margin="0,14,0,0"
@@ -131,8 +127,9 @@
 
                     <Border Margin="10" Padding="24" Background="White" CornerRadius="14">
                         <StackPanel>
-                            <TextBlock Text="Принято" Foreground="#78909C" FontSize="15"/>
-                            <TextBlock Text="-"
+                            <TextBlock Text="Принято всего" Foreground="#78909C" FontSize="15"/>
+                            <TextBlock x:Name="IncomingTotalTb"
+                                       Text="0"
                                        Margin="0,14,0,0"
                                        FontSize="40"
                                        FontWeight="Bold"
@@ -162,7 +159,7 @@
 
                     <Border Margin="10" Padding="24" Background="White" CornerRadius="14">
                         <StackPanel>
-                            <TextBlock Text="Отсортировано сегодня" Foreground="#78909C" FontSize="15"/>
+                            <TextBlock Text="Отсортировано сегодня (мной)" Foreground="#78909C" FontSize="15"/>
                             <TextBlock x:Name="SortedItemsTb"
                                        Text="0"
                                        Margin="0,14,0,0"
@@ -174,8 +171,9 @@
 
                     <Border Margin="10" Padding="24" Background="White" CornerRadius="14">
                         <StackPanel>
-                            <TextBlock Text="Отгружено" Foreground="#78909C" FontSize="15"/>
-                            <TextBlock Text="-"
+                            <TextBlock Text="Отсортировано всего" Foreground="#78909C" FontSize="15"/>
+                            <TextBlock x:Name="SortedTotalTb"
+                                       Text="0"
                                        Margin="0,14,0,0"
                                        FontSize="40"
                                        FontWeight="Bold"
@@ -184,7 +182,6 @@
                     </Border>
                 </UniformGrid>
 
-                <!-- Кнопки -->
                 <TextBlock Text="Управление"
                            Margin="10,0,10,14"
                            FontSize="20"
@@ -233,6 +230,7 @@
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
                     <Button Margin="10"
                             Height="138"
                             Style="{StaticResource BtnStyle}"
@@ -246,7 +244,6 @@
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-
                 </UniformGrid>
             </StackPanel>
         </ScrollViewer>

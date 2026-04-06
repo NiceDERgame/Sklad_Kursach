@@ -6,6 +6,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,6 +43,9 @@ namespace Sklad_Kursach.Pages
             {
                 if (!UserData.EnsureAuthorized(this))
                     return;
+
+                if (ReceiptDateDp.SelectedDate == null)
+                    ReceiptDateDp.SelectedDate = DateTime.Today;
             }
             catch (Exception ex)
             {
@@ -68,6 +72,52 @@ namespace Sklad_Kursach.Pages
                 return item.Content?.ToString()?.Trim();
 
             return comboBox?.Text?.Trim();
+        }
+
+        private (int receiptId, string receiptNumber) FindCreatedReceipt(
+            string productName,
+            int employeeId,
+            DateTime arrivalDate,
+            int quantity,
+            decimal price)
+        {
+            using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
+            {
+                conn.Open();
+
+                SqlCommand cmd = new SqlCommand(@"
+                    SELECT TOP 1
+                        r.Receipt_id,
+                        r.ReceiptNumber
+                    FROM Receipt r
+                    JOIN ReceiptItem ri ON r.Receipt_id = ri.Receipt_id
+                    JOIN Product p ON ri.product_id = p.product_id
+                    WHERE r.employee_id = @empId
+                      AND p.[Name] = @productName
+                      AND ri.Quantity = @qty
+                      AND ri.Price = @price
+                      AND CAST(ri.ArrivalDate AS DATE) = CAST(@arrivalDate AS DATE)
+                    ORDER BY r.Receipt_id DESC", conn);
+
+                cmd.Parameters.AddWithValue("@empId", employeeId);
+                cmd.Parameters.AddWithValue("@productName", productName);
+                cmd.Parameters.AddWithValue("@qty", quantity);
+                cmd.Parameters.AddWithValue("@price", price);
+                cmd.Parameters.AddWithValue("@arrivalDate", arrivalDate);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return (
+                            Convert.ToInt32(reader["Receipt_id"]),
+                            reader["ReceiptNumber"].ToString()
+                        );
+                    }
+                }
+            }
+
+            throw new Exception("Не удалось определить созданную накладную после приёмки.");
         }
 
         private void Accept_Click(object sender, RoutedEventArgs e)
@@ -165,9 +215,6 @@ namespace Sklad_Kursach.Pages
 
                 DateTime arrivalDate = receiptDate.Value.Date.Add(DateTime.Now.TimeOfDay);
 
-                int receiptId;
-                string receiptNumber;
-
                 string connStr = ConfigurationManager.ConnectionStrings["Warehouse_DB_V3"]?.ConnectionString;
                 if (string.IsNullOrWhiteSpace(connStr))
                     throw new Exception("Строка подключения к БД не найдена.");
@@ -176,43 +223,46 @@ namespace Sklad_Kursach.Pages
                 {
                     conn.Open();
 
-                    using (SqlTransaction transaction = conn.BeginTransaction())
-                    {
-                        try
-                        {
-                            SqlCommand cmd = new SqlCommand("AddIncomingProduct", conn, transaction);
-                            cmd.CommandType = CommandType.StoredProcedure;
+                    SqlCommand cmd = new SqlCommand("AddIncomingProduct", conn);
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-                            cmd.Parameters.AddWithValue("@ProductName", productName);
-                            cmd.Parameters.AddWithValue("@TypeID", typeId);
-                            cmd.Parameters.AddWithValue("@ProviderID", supplierId);
-                            cmd.Parameters.AddWithValue("@EmployeeID", UserData.CurrentUser.EmployeeId);
-                            cmd.Parameters.AddWithValue("@Quantity", quantity);
-                            cmd.Parameters.AddWithValue("@Price", price);
-                            cmd.Parameters.AddWithValue("@ShelfLifeHours", shelfLifeHours);
-                            cmd.Parameters.AddWithValue("@ArrivalDate", arrivalDate);
+                    cmd.Parameters.AddWithValue("@ProductName", productName);
+                    cmd.Parameters.AddWithValue("@TypeID", typeId);
+                    cmd.Parameters.AddWithValue("@ProviderID", supplierId);
+                    cmd.Parameters.AddWithValue("@EmployeeID", UserData.CurrentUser.EmployeeId);
+                    cmd.Parameters.AddWithValue("@Quantity", quantity);
+                    cmd.Parameters.AddWithValue("@Price", price);
+                    cmd.Parameters.AddWithValue("@ShelfLifeHours", shelfLifeHours);
+                    cmd.Parameters.AddWithValue("@ArrivalDate", arrivalDate);
 
-                            DataTable resultTable = new DataTable();
-                            using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
-                            {
-                                adapter.Fill(resultTable);
-                            }
+                    cmd.ExecuteNonQuery();
+                }
 
-                            if (resultTable.Rows.Count == 0)
-                                throw new Exception("Процедура не вернула данные о приёмке.");
+                int receiptId;
+                string receiptNumber;
 
-                            DataRow row = resultTable.Rows[0];
-                            receiptId = Convert.ToInt32(row["Receipt_id"]);
-                            receiptNumber = Convert.ToString(row["ReceiptNumber"]);
+                try
+                {
+                    var receiptInfo = FindCreatedReceipt(
+                        productName,
+                        UserData.CurrentUser.EmployeeId,
+                        arrivalDate,
+                        quantity,
+                        price);
 
-                            transaction.Commit();
-                        }
-                        catch
-                        {
-                            try { transaction.Rollback(); } catch { }
-                            throw;
-                        }
-                    }
+                    receiptId = receiptInfo.receiptId;
+                    receiptNumber = receiptInfo.receiptNumber;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Товар был принят, но не удалось определить созданную накладную:\n" + ex.Message,
+                        "Предупреждение",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    ClearForm();
+                    NavigateToHub();
+                    return;
                 }
 
                 try
@@ -236,17 +286,23 @@ namespace Sklad_Kursach.Pages
                     });
 
                     string filePath = ReceiptInvoiceService.CreateInvoiceDocx(documentData);
+                    string fileName = Path.GetFileName(filePath);
 
                     using (SqlConnection conn = new SqlConnection(UserData.GetConnectionString()))
                     {
                         conn.Open();
 
                         SqlCommand docCmd = new SqlCommand(@"
-                            INSERT INTO ReceiptDocument (Receipt_id, FilePath, CreatedAt)
-                            VALUES (@Receipt_id, @FilePath, GETDATE())", conn);
+                            INSERT INTO ReceiptDocument
+                                (Receipt_id, DocumentNumber, FileName, FilePath, CreatedAt, CreatedByEmployee_id)
+                            VALUES
+                                (@Receipt_id, @DocumentNumber, @FileName, @FilePath, GETDATE(), @CreatedByEmployee_id)", conn);
 
                         docCmd.Parameters.AddWithValue("@Receipt_id", receiptId);
+                        docCmd.Parameters.AddWithValue("@DocumentNumber", receiptNumber);
+                        docCmd.Parameters.AddWithValue("@FileName", fileName);
                         docCmd.Parameters.AddWithValue("@FilePath", filePath);
+                        docCmd.Parameters.AddWithValue("@CreatedByEmployee_id", UserData.CurrentUser.EmployeeId);
                         docCmd.ExecuteNonQuery();
                     }
 
@@ -266,6 +322,7 @@ namespace Sklad_Kursach.Pages
                 }
 
                 ClearForm();
+                NavigateToHub();
             }
             catch (SqlException ex)
             {
@@ -285,6 +342,16 @@ namespace Sklad_Kursach.Pages
             }
         }
 
+        private void NavigateToHub()
+        {
+            string role = (UserData.CurrentUser?.Role ?? "").Trim();
+
+            if (role == "Администратор" || role == "Старший рабочий")
+                NavigationService?.Navigate(new AdminHubPage());
+            else
+                NavigationService?.Navigate(new UserHubPage());
+        }
+
         private void ClearForm()
         {
             Tovar_Name.Text = string.Empty;
@@ -293,15 +360,14 @@ namespace Sklad_Kursach.Pages
             TotalCountTb.Text = string.Empty;
             PriceTb.Text = string.Empty;
             ShelfLifeTb.Text = string.Empty;
-            ReceiptDateDp.SelectedDate = null;
+            ReceiptDateDp.SelectedDate = DateTime.Today;
         }
 
         private void GoBack_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (NavigationService?.CanGoBack == true)
-                    NavigationService.GoBack();
+                NavigateToHub();
             }
             catch (Exception ex)
             {

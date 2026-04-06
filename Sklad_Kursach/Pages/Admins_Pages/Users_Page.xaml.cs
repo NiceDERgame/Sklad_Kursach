@@ -20,7 +20,7 @@ namespace Sklad_Kursach.Pages
             public string Password { get; set; }
             public string LastLogin { get; set; }
             public int IncomingToday { get; set; }
-            public int SortToday { get; set; }
+            public int SortToday { get; set; } // здесь теперь будет ОБЩЕЕ количество сортировок
         }
 
         public Users_Page()
@@ -85,20 +85,20 @@ namespace Sklad_Kursach.Pages
                                 SELECT COUNT(*) 
                                 FROM ActionLog AL 
                                 WHERE AL.Employee_id = E.Employee_id 
-                                  AND AL.ActionType = 'INCOMING' 
+                                  AND AL.ActionType = 'INCOMING'
                                   AND CAST(AL.ActionTime AS DATE) = CAST(GETDATE() AS DATE)
                             ) AS IncToday,
                             (
                                 SELECT COUNT(*) 
                                 FROM ActionLog AL 
                                 WHERE AL.Employee_id = E.Employee_id 
-                                  AND AL.ActionType = 'SORT' 
-                                  AND CAST(AL.ActionTime AS DATE) = CAST(GETDATE() AS DATE)
-                            ) AS SortToday
+                                  AND AL.ActionType = 'SORT'
+                            ) AS SortTotal
                         FROM Employee E
                         JOIN FIO F ON E.FIO_id = F.FIO_id
                         JOIN Post P ON E.Post_id = P.Post_id
-                        JOIN Data_for_authorization A ON E.Auth_id = A.Auth_id";
+                        JOIN Data_for_authorization A ON E.Auth_id = A.Auth_id
+                        ORDER BY F.Last_name, F.First_name";
 
                     SqlCommand cmd = new SqlCommand(query, conn);
 
@@ -116,7 +116,7 @@ namespace Sklad_Kursach.Pages
                                 Password = r["Password"]?.ToString(),
                                 LastLogin = r["LastVhod"] != DBNull.Value ? r["LastVhod"].ToString() : "—",
                                 IncomingToday = Convert.ToInt32(r["IncToday"]),
-                                SortToday = Convert.ToInt32(r["SortToday"])
+                                SortToday = Convert.ToInt32(r["SortTotal"])
                             });
                         }
                     }
@@ -169,6 +169,7 @@ namespace Sklad_Kursach.Pages
                 NewPatronymicTb.Clear();
                 NewLoginTb.Clear();
                 NewPassTb.Clear();
+                NewRoleCb.SelectedIndex = 2; // Рабочий
             }
             catch (Exception ex)
             {
@@ -218,7 +219,7 @@ namespace Sklad_Kursach.Pages
                         SqlCommand cmdFio = new SqlCommand(
                             @"INSERT INTO FIO (Last_name, First_name, Middle_name) 
                               VALUES (@fam, @im, @otch); 
-                              SELECT SCOPE_IDENTITY();",
+                              SELECT CAST(SCOPE_IDENTITY() AS INT);",
                             conn, transaction);
 
                         cmdFio.Parameters.AddWithValue("@fam", NewSurnameTb.Text.Trim());
@@ -233,7 +234,7 @@ namespace Sklad_Kursach.Pages
                         SqlCommand cmdAuth = new SqlCommand(
                             @"INSERT INTO Data_for_authorization (Login, Password) 
                               VALUES (@log, @pass); 
-                              SELECT SCOPE_IDENTITY();",
+                              SELECT CAST(SCOPE_IDENTITY() AS INT);",
                             conn, transaction);
 
                         cmdAuth.Parameters.AddWithValue("@log", NewLoginTb.Text.Trim());
@@ -242,7 +243,8 @@ namespace Sklad_Kursach.Pages
                         int authId = Convert.ToInt32(cmdAuth.ExecuteScalar());
 
                         SqlCommand cmdEmp = new SqlCommand(
-                            "INSERT INTO Employee (Post_id, FIO_id, Auth_id) VALUES (@postId, @fioId, @authId)",
+                            @"INSERT INTO Employee (Post_id, FIO_id, Auth_id) 
+                              VALUES (@postId, @fioId, @authId)",
                             conn, transaction);
 
                         cmdEmp.Parameters.AddWithValue("@postId", postId);
@@ -315,7 +317,7 @@ namespace Sklad_Kursach.Pages
                 }
 
                 if (MessageBox.Show(
-                    $"Уволить {user.FullName}?",
+                    $"Удалить сотрудника {user.FullName} из базы данных?",
                     "Подтверждение",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question) != MessageBoxResult.Yes)
@@ -330,29 +332,99 @@ namespace Sklad_Kursach.Pages
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
                     conn.Open();
+                    SqlTransaction transaction = conn.BeginTransaction();
 
-                    SqlCommand cmd = new SqlCommand(
-                        "UPDATE Data_for_authorization SET Login = @log, Password = '---' WHERE Auth_id = @id",
-                        conn);
+                    try
+                    {
+                        // Проверяем, есть ли связанные данные.
+                        SqlCommand checkCmd = new SqlCommand(@"
+                            SELECT
+                                (SELECT COUNT(*) FROM Receipt WHERE employee_id = @empId) +
+                                (SELECT COUNT(*) FROM LotPlacement WHERE PlacedByEmployee_id = @empId) +
+                                (SELECT COUNT(*) FROM Shipment WHERE employee_id = @empId) +
+                                (SELECT COUNT(*) FROM ShipmentPick WHERE PickedByEmployee_id = @empId) +
+                                (SELECT COUNT(*) FROM ActionLog WHERE Employee_id = @empId) AS RefCount",
+                            conn, transaction);
 
-                    cmd.Parameters.AddWithValue("@log", "FIRED_" + user.Login + "_" + new Random().Next(100));
-                    cmd.Parameters.AddWithValue("@id", user.AuthId);
-                    cmd.ExecuteNonQuery();
+                        checkCmd.Parameters.AddWithValue("@empId", user.EmployeeId);
+                        int refCount = Convert.ToInt32(checkCmd.ExecuteScalar());
 
-                    SqlCommand cmdName = new SqlCommand(
-                        "UPDATE FIO SET Last_name = Last_name + ' (УВОЛЕН)' WHERE FIO_id = (SELECT FIO_id FROM Employee WHERE Employee_id = @eid)",
-                        conn);
+                        if (refCount > 0)
+                        {
+                            transaction.Rollback();
 
-                    cmdName.Parameters.AddWithValue("@eid", user.EmployeeId);
-                    cmdName.ExecuteNonQuery();
+                            MessageBox.Show(
+                                "Этого сотрудника нельзя удалить полностью, потому что он уже связан с приёмками, сортировками, отгрузками или логами.\n\n" +
+                                "Сначала нужно удалить или переназначить связанные записи.",
+                                "Удаление невозможно",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                            return;
+                        }
+
+                        int fioId = 0;
+                        int authId = 0;
+
+                        SqlCommand getIdsCmd = new SqlCommand(@"
+                            SELECT FIO_id, Auth_id
+                            FROM Employee
+                            WHERE Employee_id = @id",
+                            conn, transaction);
+
+                        getIdsCmd.Parameters.AddWithValue("@id", user.EmployeeId);
+
+                        using (SqlDataReader reader = getIdsCmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                fioId = Convert.ToInt32(reader["FIO_id"]);
+                                authId = Convert.ToInt32(reader["Auth_id"]);
+                            }
+                            else
+                            {
+                                throw new Exception("Сотрудник не найден.");
+                            }
+                        }
+
+                        SqlCommand deleteEmployeeCmd = new SqlCommand(
+                            "DELETE FROM Employee WHERE Employee_id = @id",
+                            conn, transaction);
+                        deleteEmployeeCmd.Parameters.AddWithValue("@id", user.EmployeeId);
+                        deleteEmployeeCmd.ExecuteNonQuery();
+
+                        SqlCommand deleteAuthCmd = new SqlCommand(
+                            "DELETE FROM Data_for_authorization WHERE Auth_id = @id",
+                            conn, transaction);
+                        deleteAuthCmd.Parameters.AddWithValue("@id", authId);
+                        deleteAuthCmd.ExecuteNonQuery();
+
+                        SqlCommand deleteFioCmd = new SqlCommand(
+                            "DELETE FROM FIO WHERE FIO_id = @id",
+                            conn, transaction);
+                        deleteFioCmd.Parameters.AddWithValue("@id", fioId);
+                        deleteFioCmd.ExecuteNonQuery();
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        try { transaction.Rollback(); } catch { }
+                        throw;
+                    }
                 }
+
+                MessageBox.Show(
+                    "Сотрудник удалён из базы данных.",
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
 
                 LoadUsers();
             }
             catch (SqlException ex)
             {
                 MessageBox.Show(
-                    "Ошибка базы данных при увольнении сотрудника:\n" + ex.Message,
+                    "Ошибка базы данных при удалении сотрудника:\n" + ex.Message,
                     "SQL ошибка",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -360,7 +432,7 @@ namespace Sklad_Kursach.Pages
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Ошибка при увольнении сотрудника:\n" + ex.Message,
+                    "Ошибка при удалении сотрудника:\n" + ex.Message,
                     "Ошибка",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
